@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "ken <919125189@qq.com>",
+  "license": "MIT",
   "dependencies": {
     "async": "^1.5.2",
     "nodejieba": "^1.4.6",
