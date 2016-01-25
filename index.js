@@ -3,7 +3,7 @@ var util = require('util');
 var jieba = require('nodejieba');
 var redis = require('redis');
 var async = require('async');
-var redisClient = null;
+var redisClient;
 
 var option = {
     'host': '127.0.0.1',
@@ -12,16 +12,8 @@ var option = {
     'keyArr': null
 }
 
-var checkInit = () => {
-    if (option.indexArr == null) {
-        throw new Error('set up the index before using the method of data')
-        return
-    };
-    if (option.keyArr == null) {
-        throw new Error('set up the key before using the method of data')
-        return
-    };
-    if (redisClient == null) {
+var redisClientInit = () => {
+    if (!redisClient) {
         redisClient = redis.createClient({
             'host': option.host,
             'port': option.port
@@ -77,7 +69,6 @@ search.prototype.option = function(opt) {
     };
 }
 search.prototype.index = function(arr) {
-    // body...
     if (arr && util.isArray(arr)) {
         option.indexArr = arr;
         return this;
@@ -86,7 +77,6 @@ search.prototype.index = function(arr) {
     };
 };
 search.prototype.key = function(arr) {
-    // body...
     if (arr && util.isArray(arr)) {
         option.keyArr = arr;
         return this;
@@ -94,35 +84,61 @@ search.prototype.key = function(arr) {
         throw new Error('err in keyArr')
     };
 };
-search.prototype.query = function(str, cb) {
-    // body...
+search.prototype.queryKeyword = function(str, cb) {
     if (str && util.isString(str)) {
-        checkInit.apply(this)
-        redisClient.smembers(str,(err,r)=>{
+        redisClientInit.apply(this)
+        redisClient.keys('*' + str + '*', (err, r) => {
             if (err) {
                 throw new Error('err in redisClient')
                 return
             };
-            var res=[]
-            r.forEach((item)=>{
+            cb(r)
+        })
+    } else {
+        throw new Error('err in queryKey string')
+    };
+};
+search.prototype.query = function(str, cb) {
+    if (str && util.isString(str)) {
+        redisClientInit.apply(this)
+        redisClient.smembers(str, (err, r) => {
+            if (err) {
+                throw new Error('err in redisClient')
+                return
+            };
+            var res = []
+            r.forEach((item) => {
                 res.push(JSON.parse(item))
             })
-            cb(null,res)
+            cb(res)
         })
     } else {
         throw new Error('err in query string')
     };
 };
-search.prototype.data = function(arr) {
-    // body...
-
+search.prototype.adddata = function(arr) {
+    this.data(arr, true)
+}
+search.prototype.data = function(arr, isAdded) {
     if (arr && util.isArray(arr)) {
-        checkInit.apply(this)
+        if (option.indexArr == null) {
+            throw new Error('set up the index before using the method of data')
+            return
+        };
+        if (option.keyArr == null) {
+            throw new Error('set up the key before using the method of data')
+            return
+        };
+        redisClientInit.apply(this)
         var a = (cb) => {
-            clearAllKeys.call(this, () => {
-                var n = {}
+            var n = {}
+            if (!isAdded) {
+                clearAllKeys.call(this, () => {
+                    cb(null, n)
+                })
+            } else {
                 cb(null, n)
-            })
+            };
         }
         var b = (n, cb) => {
             arr.forEach((item) => {
@@ -154,10 +170,6 @@ search.prototype.data = function(arr) {
         var c = (n, cb) => {
             var wordArr = n.wordArr
             var obj = n.obj
-            if (redisClient == null) {
-                throw new Error('err in redisClient')
-                return
-            };
             wordArr.forEach((word) => {
                 redisClient.sadd(word, JSON.stringify(obj), (err, r) => {
                     if (err) {
