@@ -181,13 +181,14 @@ search.prototype.data = function(arr, isAdded) {
             })
 
         }
+        var self = this
         async.waterfall([a, b, c], (err, r) => {
             if (err) {
                 throw new Error('err in async')
                 return
             };
+            return self
         })
-        return this
 
     } else {
         throw new Error('err in dataArr')
