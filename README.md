@@ -47,7 +47,7 @@
 
 ```
 # API
- cutKeys
+ > cutKeys
 ```js
 ```
  data
