@@ -46,13 +46,13 @@
 
 ```
 # API
-##cutKeys
+## cutKeys
 ```js
 ```
-##data
+## data
 ```js
 ```
-##addData
+## addData
 ```js
 ```
 # 特点
