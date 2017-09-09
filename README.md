@@ -36,7 +36,8 @@
                 })
 
     // 关键字检索
-    s.query('A',(err,r)=>{
+    s.returnKeys(['name','title','id'])
+     .query('A',(err,r)=>{
     	if (err) {
     		console.log(err);
             return
@@ -56,4 +57,26 @@
 ### addData
 ```js
 ```
-
+### returnKeys
+```js
+     // 根据需要选择返回数据KEY
+     s.returnKeys(['name','title','id'])
+     .query('A',(err,r)=>{
+        if (err) {
+            console.log(err);
+            return
+        };
+        // 结果：[ { name: 'AAA', title: 'A', id: 2 } ]
+        console.log(r);   
+    })
+    // 根据需要选择返回数据KEY
+    s.returnKeys(['name'])
+     .query('A',(err,r)=>{
+        if (err) {
+            console.log(err);
+            return
+        };
+        // 结果：[ { name: 'AAA' } ]
+        console.log(r);   
+    })
+```

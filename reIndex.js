@@ -3,7 +3,12 @@ import ayc from "async";
 import util from "util";
 import jieba from "nodejieba";
 import uuid from "uuid/v4";
+
+// redis客户端
 let redisClient
+/**
+ * 默认参数
+ */
 let option = {
     host: '127.0.0.1',
     port: 6379
@@ -12,7 +17,7 @@ let option = {
  * 删除所有现存分词KEY
  * @param  {fn} cbk 
  */
-let clearAllKeys = (cbk) => {
+const clearAllKeys = (cbk) => {
     if (!redisClient) {
         return
     }
@@ -58,7 +63,7 @@ let initRedisClient = (opt) => {
  * @param  {array} cutKeys 
  * @param  {array} d     
  */
-let cutWords = (cutKeys, d) => {
+const cutWords = (cutKeys, d) => {
     let n = {}
     cutKeys.forEach(key => {
         d.forEach(obj => {
@@ -75,25 +80,40 @@ let cutWords = (cutKeys, d) => {
     })
     return n
 }
+const reMixWords = (returnKeys, word) => {
+    let n = {}
+    returnKeys.forEach((k) => {
+        if (word[k]) {
+            n[k] = word[k]
+        }
+    })
+    return n
+}
 /**
  * 添加唯一键
  * @param  {array} d 需要处理数组
  * @return {array}   处理过数组
  */
-let addUUID = d => {
+const addUUID = d => {
     return d.map(obj => {
         obj['_id'] = uuid()
         return obj
     })
 }
+
+
+
 class Search {
+
     constructor(args) {
         this.opt = Object.assign({}, option, args)
+        // 初始化RedisClient
         // initRedisClient(this.opt)
     }
     /**
      * 需要进行分词KEY
-     * @param  {Array} arr 
+     * @param  {Array} arr 键数组
+     * @return {object}   Search对象
      */
     cutKeys(arr) {
         if (util.isArray(arr)) {
@@ -101,6 +121,23 @@ class Search {
         }
         return this
     }
+   /**
+    * 需要返回的KEY
+    * @param  {array} arr 键数组
+    * @return {object}   Search对象
+    */
+    returnKeys(arr) {
+        if (util.isArray(arr)) {
+            option['returnKeys'] = arr
+        }
+        return this
+    }
+    /**
+     * 初始化redis数据
+     * @param  {[type]}   d           被检索数据
+     * @param  {Function} done        回调函数
+     * @param  {Boolean}  isAddedData 是否追加数据
+     */
     data(d, done, isAddedData = false) {
         if (util.isArray(d)) {
             //非追加数据清理所有KEY对应UUID
@@ -132,11 +169,36 @@ class Search {
                 }
             })
         }
-        return this
     }
+    /**
+     * 追加数据2Redis
+     * @param {array}   d    被检索数据
+     * @param {Function} done 回调函数
+     */
     addData(d, done) {
         data(d, done, true)
-        return this
+    }
+    /**
+     * 检索数据
+     * @param  {array}   arr  关键字数组
+     * @param  {Function} done 回调函数
+     */
+    query(arr, done) {
+        let r = []
+        if (util.isArray(arr)) {
+            ayc.map(arr, (word, cbk) => {
+            	//根据word去redis获取对象
+            	
+            	//根据returnKeys重组对象
+                cbk(reMixWords(option.returnKeys,obj))
+            }, (err, r) => {
+                if (err) {
+                    throw new Error('err in method query')
+                    return
+                }
+                done(r)
+            })
+        }
     }
 }
 export {
