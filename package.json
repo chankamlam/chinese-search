@@ -4,13 +4,23 @@
   "description": "search engine in chinese",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clean": "rm -rf ./dist && mkdir ./dist && babel ./reIndex.js -o ./dist/index.js",
+    "test": "npm run clean && DEBUG=reIndex:log mocha -t 50000 --compilers js:babel-core/register ./test/reIndex.js"
   },
   "author": "ken <919125189@qq.com>",
   "license": "MIT",
   "dependencies": {
     "async": "^1.5.2",
+    "babel": "^6.23.0",
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-register": "^6.26.0",
+    "mocha": "^3.5.0",
     "nodejieba": "^1.4.11",
-    "redis": "^2.8.0"
+    "redis": "^2.8.0",
+    "should": "^13.0.1",
+    "uuid": "^3.1.0"
   }
 }
