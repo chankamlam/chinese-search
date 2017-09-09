@@ -47,10 +47,10 @@
 
 ```
 # API
- >> cutKeys
+ > cutKeys
 ```js
 ```
- data
+ *data
 ```js
 ```
  addData
