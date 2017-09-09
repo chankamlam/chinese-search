@@ -11,7 +11,7 @@
 ```js
     var search = require('chinese-search');
 
-    var str = [{
+    var data = [{
         'name': 'C#权威指南-full',
         'title': 'C#权威指南是一本C#进阶学习最好的书籍。',
         'author':'ken',
@@ -27,26 +27,34 @@
         'author':'ken',
         'id': 3
     }]
+    // 启动服务，首先填入数据。这些检索数据将会保存在redis里面
+    var s = search({'host':'127.0.0.1','port':4000})
+            .cutKeys(['name','title'])
+            .data(data,() => {
+                // 填完数据后处理
+                })
 
-    // index() 用以输入需要进行分词的列
-    // key() 用以输入对应分词返回数据需要存储的列，至少你需要存储id，通过id于数据库获取其它你需要的数据内容。
-    // data() 用以输入需要分词数据源
-    var s=search({'host':'127.0.0.1','port':4000})
-           .index(['name','title'])
-           .key(['name','title','id'])
-           .data(str)
-
-    // query() 关键字检索
+    // 关键字检索
     s.query('A',(err,r)=>{
     	if (err) {
     		console.log(err);
+            return
     	};
-    	console.log(r);   // 结果：[ { name: 'C++权威指南-full', title: 'A', id: 2 } ]
+        // 结果：[ { name: 'C++权威指南-full', title: 'A', id: 2 } ]
+        console.log(r);   
     })
 
 ```
 # API
-
+##cutKeys
+```js
+```
+##data
+```js
+```
+##addData
+```js
+```
 # 特点
      这个全文检索组件最大特点: 是通过index()和key()可以自定义你需要分词的列和分词对应返回的数据结构,
      减少因为只返回id而需要频繁检索数据库的机率.
