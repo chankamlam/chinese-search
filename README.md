@@ -35,8 +35,8 @@
                 // 填完数据后处理
                 })
 
-    // 关键字检索
-    s.query('A',(err,r)=>{
+    // 关键字检索
+    s.query('A',(err,r)=>{
     	if (err) {
     		console.log(err);
             return
@@ -47,13 +47,13 @@
 
 ```
 # API
- > cutKeys
+### cutKeys
 ```js
 ```
-#### data
+### data
 ```js
 ```
- addData
+### addData
 ```js
 ```
 
