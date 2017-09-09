@@ -1,12 +1,15 @@
-# chinese-SearchEngine
+# chinese-search
+========================================================================
 
-chinese-search是一个全文检索组件，基层实现依赖"nodejieba"中文分词和“redis”集合存储。
+    chinese-search是一个全文检索组件，基层实现依赖"nodejieba"中文分词和“redis”集合存储。
 
 # Install with
+========================================================================
 
     npm install chinese-search
 
-# Usage
+# Usage Example
+========================================================================
 ```js
 var search = require('chinese-search');
 
