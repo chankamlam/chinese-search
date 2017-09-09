@@ -5,7 +5,6 @@
     it is easy, small and fast than using mysql.
 
 # 安装
-
     npm install chinese-search
 
 # 使用
