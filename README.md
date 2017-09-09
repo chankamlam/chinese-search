@@ -50,12 +50,31 @@
 # API
 ### cutKeys
 ```js
+    // 设置需要分词的键，这步是必须的，否则报错
+    s.cutKeys(['name','title'])
+    // 假如被分词数据没有某个KEY，将略过
+    s.cutKeys(['name','title','description'])
 ```
 ### data
 ```js
 ```
 ### addData
 ```js
+     // 追加数据
+     s.addData([{
+        'name': 'NodeJS权威指南',
+        'title': 'NodeJS',
+        'author':'ken',
+        'id': 4
+     }])
+    // 重定义分词键并追加数据
+     s.cutKeys(['name']) //默认按初始化设定
+      .addData([{
+        'name': 'NodeJS权威指南',
+        'title': 'NodeJS',
+        'author':'ken',
+        'id': 4
+      }])
 ```
 ### returnKeys
 ```js

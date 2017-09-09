@@ -3,7 +3,6 @@ import ayc from "async";
 import util from "util";
 import jieba from "nodejieba";
 import uuid from "uuid/v4";
-
 // redis客户端
 let redisClient
 /**
@@ -41,7 +40,7 @@ const clearAllKeys = (cbk) => {
     }
     async.waterfall([a, b], (err, r) => {
         if (err) {
-            throw new Error('err in fn clearAllKeys')
+            throw new Error(err)
             return
         };
         cbk()
@@ -100,11 +99,7 @@ const addUUID = d => {
         return obj
     })
 }
-
-
-
 class Search {
-
     constructor(args) {
         this.opt = Object.assign({}, option, args)
         // 初始化RedisClient
@@ -121,11 +116,11 @@ class Search {
         }
         return this
     }
-   /**
-    * 需要返回的KEY
-    * @param  {array} arr 键数组
-    * @return {object}   Search对象
-    */
+    /**
+     * 需要返回的KEY
+     * @param  {array} arr 键数组
+     * @return {object}   Search对象
+     */
     returnKeys(arr) {
         if (util.isArray(arr)) {
             option['returnKeys'] = arr
@@ -155,13 +150,17 @@ class Search {
             }
             // 分词
             let c = (n, cb) => {
-                n = cutWords(option.cutKeys, n.d)
+                if (option.cutKeys) {
+                    n = cutWords(option.cutKeys, n.d)
+                }else{
+                	cb('need 2 setup the cutKeys before calling the data method')
+                }
                 cb(null, n)
             }
             // 保存到redis
             ayc.waterfall([a, b, c], (err, r) => {
                 if (err) {
-                    throw new Error("err in method data")
+                    throw new Error(err)
                     return
                 }
                 if (done) {
@@ -187,10 +186,14 @@ class Search {
         let r = []
         if (util.isArray(arr)) {
             ayc.map(arr, (word, cbk) => {
-            	//根据word去redis获取对象
-            	
-            	//根据returnKeys重组对象
-                cbk(reMixWords(option.returnKeys,obj))
+                //根据word去redis获取对象
+                //
+                //根据returnKeys重组对象
+                if (option.returnKeys) {
+                    cbk(reMixWords(option.returnKeys, obj))
+                } else {
+                    cbk(obj)
+                }
             }, (err, r) => {
                 if (err) {
                     throw new Error('err in method query')
