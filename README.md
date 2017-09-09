@@ -1,7 +1,8 @@
 # 简介
 
     chinese-search是一个全文检索组件，基层实现依赖"nodejieba"中文分词和“redis”集合存储。
-    chinese-search is a full text search in chinese , base on nodejieba and redis.it is easy, small and fast than using mysql.
+    chinese-search is a full text search in chinese , base on nodejieba and redis.
+    it is easy, small and fast than using mysql.
 
 # 安装
 
