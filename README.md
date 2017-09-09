@@ -48,17 +48,17 @@
 
 ```
 # API
-### cutKeys
+### cutKeys()
 ```js
     // 设置需要分词的键，这步是必须的，否则报错
     s.cutKeys(['name','title'])
     // 假如被分词数据没有某个KEY，将略过
     s.cutKeys(['name','title','description'])
 ```
-### data
+### data()
 ```js
 ```
-### addData
+### addData()
 ```js
      // 追加数据
      s.addData([{
@@ -76,11 +76,11 @@
         'id': 4
       }])
 ```
-### returnKeys
+### returnKeys()
 ```js
      // 根据需要选择返回数据KEY
      s.returnKeys(['name','title','id'])
-     .query('A',(err,r)=>{
+     .query(['A'],(err,r)=>{
         if (err) {
             console.log(err);
             return
@@ -90,12 +90,25 @@
     })
     // 根据需要选择返回数据KEY
     s.returnKeys(['name'])
-     .query('A',(err,r)=>{
+     .query(['A'],(err,r)=>{
         if (err) {
             console.log(err);
             return
         };
         // 结果：[ { name: 'AAA' } ]
+        console.log(r);   
+    })
+```
+### query()
+```js
+    // 根据需要选择返回数据KEY
+    s.returnKeys(['name'])
+     .query(['A','B'],(err,r)=>{
+        if (err) {
+            console.log(err);
+            return
+        };
+        // 结果：[ { name: 'AAA' } ,{ name: 'BBB' } ]
         console.log(r);   
     })
 ```

@@ -49,7 +49,7 @@ const clearAllKeys = (cbk) => {
 /**
  * 初始化RedisClient
  */
-let initRedisClient = (opt) => {
+const initRedisClient = (opt) => {
     if (!redisClient) {
         redisClient = redis.createClient({
             'host': opt.host,
@@ -101,7 +101,7 @@ const addUUID = d => {
 }
 class Search {
     constructor(args) {
-        this.opt = Object.assign({}, option, args)
+        option = Object.assign({}, option, args)
         // 初始化RedisClient
         // initRedisClient(this.opt)
     }
@@ -207,5 +207,8 @@ class Search {
 export {
     addUUID,
     cutWords,
+    reMixWords,
+    initRedisClient,
+    clearAllKeys,
     Search
 }

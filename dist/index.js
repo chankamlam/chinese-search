@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Search = exports.cutWords = exports.addUUID = undefined;
+exports.Search = exports.clearAllKeys = exports.initRedisClient = exports.reMixWords = exports.cutWords = exports.addUUID = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -67,7 +67,7 @@ var option = {
     };
     async.waterfall([a, b], function (err, r) {
         if (err) {
-            throw new Error('err in fn clearAllKeys');
+            throw new Error(err);
             return;
         };
         cbk();
@@ -131,7 +131,7 @@ var Search = function () {
     function Search(args) {
         _classCallCheck(this, Search);
 
-        this.opt = Object.assign({}, option, args);
+        option = Object.assign({}, option, args);
         // 初始化RedisClient
         // initRedisClient(this.opt)
     }
@@ -192,13 +192,17 @@ var Search = function () {
                 };
                 // 分词
                 var c = function c(n, cb) {
-                    n = cutWords(option.cutKeys, n.d);
+                    if (option.cutKeys) {
+                        n = cutWords(option.cutKeys, n.d);
+                    } else {
+                        cb('need 2 setup the cutKeys before calling the data method');
+                    }
                     cb(null, n);
                 };
                 // 保存到redis
                 _async2.default.waterfall([a, b, c], function (err, r) {
                     if (err) {
-                        throw new Error("err in method data");
+                        throw new Error(err);
                         return;
                     }
                     if (done) {
@@ -231,9 +235,13 @@ var Search = function () {
             if (_util2.default.isArray(arr)) {
                 _async2.default.map(arr, function (word, cbk) {
                     //根据word去redis获取对象
-
+                    //
                     //根据returnKeys重组对象
-                    cbk(reMixWords(option.returnKeys, obj));
+                    if (option.returnKeys) {
+                        cbk(reMixWords(option.returnKeys, obj));
+                    } else {
+                        cbk(obj);
+                    }
                 }, function (err, r) {
                     if (err) {
                         throw new Error('err in method query');
@@ -250,4 +258,7 @@ var Search = function () {
 
 exports.addUUID = addUUID;
 exports.cutWords = cutWords;
+exports.reMixWords = reMixWords;
+exports.initRedisClient = initRedisClient;
+exports.clearAllKeys = clearAllKeys;
 exports.Search = Search;
