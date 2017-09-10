@@ -7,17 +7,17 @@ import {
     reMixWords,
     initRedisClient,
     clearAllKeys,
-    Search,
+    Engine,
 } from "../dist/index";
 import debug from "debug";
 
 
-let log = debug("reIndex:log")
+let log = debug("debug:log")
 
 describe(' - 测试公共方法调用', function() {
     let s
     beforeEach(() => {
-        s = new Search({})
+        s = new Engine({})
     })
     it('test method addUUID', function() {
         let d = addUUID([{
@@ -96,7 +96,7 @@ describe(' - 测试API', function() {
             'host': '127.0.0.1',
             'port': 6379
         }
-        let s = new Search(opt)
+        let s = new Engine(opt)
         s.cutKeys(['name', 'title'])
             .data([{
                 id: 0,
@@ -120,7 +120,7 @@ describe(' - 测试API', function() {
             'host': '127.0.0.1',
             'port': 6379
         }
-        let s = new Search(opt)
+        let s = new Engine(opt)
         s.cutKeys(['name', 'title'])
             .data([{
                 id: 0,
@@ -131,10 +131,10 @@ describe(' - 测试API', function() {
                 'name': 'bBb',
                 'title': '老师！他中午还没有吃饭呢!aAa'
             }], (err, r) => {
-                s.addData([{id:3,'name':'kkk','title':'aAa'}],(err,r)=>{
-                    if(err){
+                s.addData([{ id: 3, 'name': 'kkk', 'title': 'aAa' }], (err, r) => {
+                    if (err) {
                         log(err)
-                    }else{
+                    } else {
                         log(r)
                         done()
                     }
@@ -142,11 +142,11 @@ describe(' - 测试API', function() {
             })
     });
     it('test API query', function(done) {
-              let opt = {
+        let opt = {
             'host': '127.0.0.1',
             'port': 6379
         }
-        let s = new Search(opt)
+        let s = new Engine(opt)
         s.cutKeys(['name', 'title'])
             .data([{
                 id: 0,
@@ -157,26 +157,31 @@ describe(' - 测试API', function() {
                 'name': 'bBb',
                 'title': '老师！他中午还没有吃饭呢!'
             }], (err, r) => {
-                if(!err){
-                    s.query(['aAa'],(err,r)=>{
-                        if(err){
+                if (!err) {
+                    s.query(['aAa'], (err, r) => {
+                        if (err) {
                             log(err)
-                        }else{
+                        } else {
                             log(r)
+                            r.length.should.eql(1)
+                            r[0].should.be.have.property('id')
+                            r[0].should.be.have.property('name')
+                            r[0].should.be.have.property('title')
+                            r[0].should.be.have.property('_id')
                             done()
                         }
                     })
-                }else{
+                } else {
                     log(err)
                 }
-            })  
+            })
     });
-        it('test API returnKeys', function(done) {
-              let opt = {
+    it('test API returnKeys', function(done) {
+        let opt = {
             'host': '127.0.0.1',
             'port': 6379
         }
-        let s = new Search(opt)
+        let s = new Engine(opt)
         s.cutKeys(['name', 'title'])
             .data([{
                 id: 0,
@@ -187,11 +192,12 @@ describe(' - 测试API', function() {
                 'name': 'bBb',
                 'title': '老师！他中午还没有吃饭呢!'
             }], (err, r) => {
-                if(!err){
-                    s.returnKeys(['id','name','title']).query(['aAa'],(err,r)=>{
-                        if(err){
+                if (!err) {
+                    s.returnKeys(['id', 'name', 'title']).query(['aAa'], (err, r) => {
+                        if (err) {
                             log(err)
-                        }else{
+                        } else {
+                            log(r)
                             r.length.should.eql(1)
                             r[0].should.be.have.property('id')
                             r[0].should.be.have.property('name')
@@ -199,10 +205,10 @@ describe(' - 测试API', function() {
                             done()
                         }
                     })
-                }else{
+                } else {
                     log(err)
                 }
-            })  
+            })
     });
 });
 // 

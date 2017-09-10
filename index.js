@@ -107,7 +107,7 @@ const addUUID = (d) => {
 /**
  * 中文全文检索引擎
  */
-class Search {
+class Engine {
     constructor(args) {
         option = Object.assign({}, option, args)
         // 初始化RedisClient
@@ -327,5 +327,5 @@ export {
     reMixWords,
     initRedisClient,
     clearAllKeys,
-    Search
+    Engine
 }

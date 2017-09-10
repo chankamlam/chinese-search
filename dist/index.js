@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Search = exports.clearAllKeys = exports.initRedisClient = exports.reMixWords = exports.cutWords = exports.addUUID = undefined;
+exports.Engine = exports.clearAllKeys = exports.initRedisClient = exports.reMixWords = exports.cutWords = exports.addUUID = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -136,9 +136,9 @@ var addUUID = function addUUID(d) {
  * 中文全文检索引擎
  */
 
-var Search = function () {
-    function Search(args) {
-        _classCallCheck(this, Search);
+var Engine = function () {
+    function Engine(args) {
+        _classCallCheck(this, Engine);
 
         option = Object.assign({}, option, args);
         // 初始化RedisClient
@@ -151,7 +151,7 @@ var Search = function () {
      */
 
 
-    _createClass(Search, [{
+    _createClass(Engine, [{
         key: "cutKeys",
         value: function cutKeys(arr) {
             if (_util2.default.isArray(arr)) {
@@ -369,7 +369,7 @@ var Search = function () {
         }
     }]);
 
-    return Search;
+    return Engine;
 }();
 
 exports.addUUID = addUUID;
@@ -377,4 +377,4 @@ exports.cutWords = cutWords;
 exports.reMixWords = reMixWords;
 exports.initRedisClient = initRedisClient;
 exports.clearAllKeys = clearAllKeys;
-exports.Search = Search;
+exports.Engine = Engine;

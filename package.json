@@ -1,16 +1,23 @@
 {
   "name": "chinese-search",
-  "version": "1.0.0",
-  "description": "search engine in chinese",
-  "main": "index.js",
+  "version": "1.0.10",
+  "description": "chinese-search是一个全文检索组件，基层实现依赖 nodejieba 中文分词 和 redis 集合存储。",
+  "main": "dist/index.js",
   "scripts": {
     "clean": "rm -rf ./dist && mkdir ./dist && babel ./index.js -o ./dist/index.js",
     "mocha": "mocha -t 2000 --compilers js:babel-core/register ./test/index.js",
-    "testWithLog": "npm run clean && DEBUG=reIndex:* npm run mocha",
+    "testWithLog": "npm run clean && DEBUG=debug:* npm run mocha",
     "test": "npm run clean && npm run mocha",
     "git":"git push && git commit -am "
   },
-  "author": "ken <919125189@qq.com>",
+  "author": {
+    "name": "chankamlam",
+    "email": "919125189@qq.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chankamlam/chinese-search"
+  },
   "license": "MIT",
   "dependencies": {
     "async": "^1.5.2",
