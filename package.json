@@ -1,6 +1,6 @@
 {
   "name": "chinese-search",
-  "version": "1.0.10",
+  "version": "1.0.12",
   "description": "chinese-search是一个全文检索组件，基层实现依赖 nodejieba 中文分词 和 redis 集合存储。",
   "main": "dist/index.js",
   "scripts": {
@@ -21,16 +21,8 @@
   "license": "MIT",
   "dependencies": {
     "async": "^1.5.2",
-    "babel": "^6.23.0",
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-es2015": "^6.24.1",
-    "babel-register": "^6.26.0",
-    "mocha": "^3.5.0",
     "nodejieba": "^1.4.11",
     "redis": "^2.8.0",
-    "should": "^13.0.1",
     "uuid": "^3.1.0"
   }
 }
