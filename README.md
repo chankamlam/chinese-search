@@ -147,7 +147,7 @@
             console.log(err);
             return
         };
-        // 结果：[ { name: 'AAA', title: 'A', id: 2 ,_id:"__UUIDOFDATA__ea7d496f-8e8c-4e41-9e8f-3518e0996166"}]
+        // 结果：[ { name: 'AAA', title: 'A', id: 2}]
         console.log(r);   
     })
 
@@ -161,7 +161,7 @@
             console.log(err);
             return
         };
-        // 结果：[ { name: 'AAA', title: 'YYYYY', id: 2 ,_id:"__UUIDOFDATA__ea7d496f-8e8c-4e41-9e8f-3518e0996166"} } ,{ name: 'BBB', title: 'XXXXXX', id: 1 ,_id:"__UUIDOFDATA__ea7d496f-8e8c-4e41-9e8f-3518e23432423"}} ]
+        // 结果：[ { name: 'AAA', title: 'YYYYY', id: 2} } ,{ name: 'BBB', title: 'XXXXXX', id: 1}} ]
         console.log(r);   
     })
 
@@ -171,8 +171,14 @@
             console.log(err);
             return
         };
-        // 结果：[ { name: 'AAA', title: 'YYYYY', id: 2 ,_id:"__UUIDOFDATA__ea7d496f-8e8c-4e41-9e8f-3518e0996166"} }]
+        // 结果：[ { name: 'AAA', title: 'YYYYY', id: 2} }]
         console.log(r);   
     })
+
+```
+# license
+```js
+
+   MIT
 
 ```
