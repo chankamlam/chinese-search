@@ -8,7 +8,7 @@
     "mocha": "mocha -t 2000 --compilers js:babel-core/register ./test/reIndex.js",
     "testWithLog": "npm run clean && DEBUG=reIndex:* npm run mocha",
     "test": "npm run clean && npm run mocha",
-    "git":"git commit -am 'edit index.js' && git push"
+    "git":"git commit -am '$1' && git push"
   },
   "author": "ken <919125189@qq.com>",
   "license": "MIT",
