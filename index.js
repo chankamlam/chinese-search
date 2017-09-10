@@ -19,34 +19,16 @@ let option = {
  * @param  {fn} done 
  */
 const clearAllKeys = (client, done) => {
-    if (!client) {
-        return
-    }
+    if (!client) return
     let a = (cb) => {
-        client.keys('*', (err, r) => {
-            if (err) {
-                cb("err in get all keys from redis")
-                return
-            };
-            cb(null, r)
-        })
+        client.keys('*', (err, r) => cb(err ? "err in get all keys from redis" : null, r))
     }
     let b = (n, cb) => {
-        if (n.length <= 0) {
-            cb(null)
-            return
-        }
-        client.del(n, (err, r) => {
-            if (err) {
-                cb("err in delete all keys from redis")
-                return
-            };
-            cb(null, r)
-        })
+        if (n.length <= 0) return cb(null)
+
+        client.del(n, (err, r) => cb(err ? "err in delete all keys from redis" : null, r))
     }
-    ayc.waterfall([a, b], (err, r) => {
-        done(err, r)
-    })
+    ayc.waterfall([a, b], (err, r) => done(err, r))
 }
 /**
  * 初始化RedisClient
@@ -102,16 +84,34 @@ const addUUID = (d) => {
         return obj
     })
 }
-
-
+/**
+ * 初始化
+ * @param  {object} args 用户传参
+ */
+const init = (args) => {
+    option = Object.assign({}, option, args)
+    // 初始化RedisClient
+    redisClient = initRedisClient(undefined, option)
+}
 /**
  * 中文全文检索引擎
  */
 class Engine {
     constructor(args) {
-        option = Object.assign({}, option, args)
-        // 初始化RedisClient
-        redisClient = initRedisClient(undefined, option)
+        init(args)
+    }
+    /**
+     * 支持express        
+     * @param  {string} key  绑定在appKEY
+     * @param  {object} args 用户传参
+     * @return {fn}      as express middleware 
+     */
+    supportExpres(key) {
+        let self = this
+        return (req, res, next) => {
+            req.app[key] = res.app[key] = self
+            next()
+        }
     }
     /**
      * 需要进行分词KEY
@@ -142,20 +142,11 @@ class Engine {
      * @param  {Boolean}  isAddedData 是否追加数据
      */
     data(d, done, isAddedData = false) {
-        if (!(util.isArray(d) && redisClient)) {
-            done(new Error('....'), null)
-            return
-        }
+        if (!(util.isArray(d) && redisClient)) return done(new Error('....'), null)
         //非追加数据清理所有KEY对应UUID
         let fn_a = cb => {
             if (!isAddedData) {
-                clearAllKeys(redisClient, (err, r) => {
-                    if (err) {
-                        cb('err in cutKeys')
-                        return
-                    }
-                    cb(null, {})
-                })
+                clearAllKeys(redisClient, (err, r) => cb(err ? 'err in cutKeys' : null, {}))
             } else {
                 cb(null, {})
             }
@@ -164,22 +155,10 @@ class Engine {
         let fn_b = (n, cb) => {
             n.d = addUUID(d)
             ayc.map(n.d, (item, cbk) => {
-                redisClient.set(item._id, JSON.stringify(item), (err, r) => {
-                    if (err) {
-                        cbk(err)
-                        return
-                    }
-                    cbk(null, r)
-                })
-            }, (err, r) => {
-                if (err) {
-                    cb('err in insert data ')
-                    return
-                }
-                cb(null, n)
-            })
+                redisClient.set(item._id, JSON.stringify(item), (err, r) => cbk(err ? err : null, r))
+            }, (err, r) => cb(err ? 'err in insert data ' : null, n))
         }
-        // 分词
+        // 分词处理
         let fn_c = (n, cb) => {
             if (option.cutKeys) {
                 n.c = cutWords(option.cutKeys, n.d)
@@ -190,13 +169,7 @@ class Engine {
         }
         // 选择db 1 (目前node_redis包不支持切换db,后续版本跟进。)
         let fn_d = (n, cb) => {
-            redisClient.select(1, (err, r) => {
-                if (err) {
-                    cb(err)
-                    return
-                }
-                cb(null, n)
-            })
+            redisClient.select(1, (err, r) => cb(err ? err : null, n))
         }
         // sadd data 2 redis
         let fn_e = (n, cb) => {
@@ -204,32 +177,11 @@ class Engine {
                 // 获取UUID数组
                 let uuids = Array.of(...n.c[k])
                 // 插入redis
-                redisClient.sadd(k, uuids, (err, r) => {
-                    if (err) {
-                        cbk(err)
-                        return
-                    }
-                    cbk(null, r)
-                })
-            }, (err, r) => {
-                if (err) {
-                    cb(err)
-                    return
-                }
-                cb(null, n)
-            })
+                redisClient.sadd(k, uuids, (err, r) => cbk(err ? err : null, r))
+            }, (err, r) => cb(err ? err : null, r))
         }
-        // excute
-        ayc.waterfall([fn_a, fn_b, fn_c, fn_e], (err, r) => {
-            if (done) {
-                done(err, r)
-            } else {
-                if (err) {
-                    throw new Error(err)
-                    return
-                }
-            }
-        })
+        // 执行瀑布流
+        ayc.waterfall([fn_a, fn_b, fn_c, fn_e], (err, r) => done ? done(err, r) : undefined)
     }
     /**
      * 追加数据2Redis
@@ -245,42 +197,27 @@ class Engine {
      * @param  {Function} done 回调函数
      */
     query(d, done) {
-        if (!(util.isArray(d) && redisClient)) {
-            done(new Error('....'), null)
-            return
-        }
-        // let r = []
-        // ayc.map(d, (word, callback) => {
 
+        if (!(util.isArray(d) && redisClient)) return done(new Error('....'), null)
+
+        // 遍历获取分词对应uuids,数据格式 => '北京':Set(uuid1,uuid2)
         let fn_a = (cb) => {
             ayc.map(d, (word, cbk) => {
+                redisClient.smembers(word, (err, r) => cbk(err ? 'err in smembers uuid from redis' : null, r))
 
-                // get the uuid first
-                redisClient.smembers(word, (err, r) => {
-                    if (err) {
-                        cbk('err in smembers uuid from redis')
-                        return
-                    }
-                    cbk(null, r)
-
+            }, (err, r) => cb(err ? err : null, { uuids: r }))
+        }
+        // 对获取uuids做唯一性处理
+        let fn_b = (n, cb) => {
+            let set = new Set();
+            n.uuids.forEach(arr => {
+                arr.forEach(uuid => {
+                    set.add(uuid)
                 })
-            }, (err, r) => {
-                if (err) {
-                    cb(err)
-                    return
-                }
-                cb(null, { uuids: r })
             })
+            cb(null, Array.of(...set))
         }
-        let fn_b = (n,cb)=>{
-        	let set = new Set();
-        	n.uuids.forEach(arr=>{
-        		arr.forEach(uuid=>{
-        			set.add(uuid)
-        		})
-        	})
-        	cb(null,Array.of(...set))
-        }
+        // 遍历获取uuid对应ObjectString which save in redis
         let fn_c = (n, cb) => {
             ayc.map(n, (uuid, cbk) => {
                 //根据uuid去redis获取对象
@@ -297,28 +234,10 @@ class Engine {
                     }
                 })
 
-            }, (err, r) => {
-                if (err) {
-                    cb(err)
-                    return
-                }
-                cb(null, r)
-            })
+            }, (err, r) => cb(err ? err : null, r))
         }
-        ayc.waterfall([fn_a,fn_b,fn_c], (err, r) => {
-            if (done) {
-                // let arr = []
-                // r.forEach(item => {
-                //     arr = arr.concat(item)
-                // })
-                done(err, r)
-            } else {
-                if (err) {
-                    throw new Error(err)
-                    return
-                }
-            }
-        })
+        // 执行瀑布流
+        ayc.waterfall([fn_a, fn_b, fn_c], (err, r) => done ? done(err, r) : undefined)
     }
 }
 export {

@@ -48,33 +48,21 @@ var option = {
      * @param  {fn} done 
      */
 };var clearAllKeys = function clearAllKeys(client, done) {
-    if (!client) {
-        return;
-    }
+    if (!client) return;
     var a = function a(cb) {
         client.keys('*', function (err, r) {
-            if (err) {
-                cb("err in get all keys from redis");
-                return;
-            };
-            cb(null, r);
+            return cb(err ? "err in get all keys from redis" : null, r);
         });
     };
     var b = function b(n, cb) {
-        if (n.length <= 0) {
-            cb(null);
-            return;
-        }
+        if (n.length <= 0) return cb(null);
+
         client.del(n, function (err, r) {
-            if (err) {
-                cb("err in delete all keys from redis");
-                return;
-            };
-            cb(null, r);
+            return cb(err ? "err in delete all keys from redis" : null, r);
         });
     };
     _async2.default.waterfall([a, b], function (err, r) {
-        done(err, r);
+        return done(err, r);
     });
 };
 /**
@@ -131,7 +119,15 @@ var addUUID = function addUUID(d) {
         return obj;
     });
 };
-
+/**
+ * 初始化
+ * @param  {object} args 用户传参
+ */
+var init = function init(args) {
+    option = Object.assign({}, option, args);
+    // 初始化RedisClient
+    redisClient = initRedisClient(undefined, option);
+};
 /**
  * 中文全文检索引擎
  */
@@ -140,18 +136,33 @@ var Engine = function () {
     function Engine(args) {
         _classCallCheck(this, Engine);
 
-        option = Object.assign({}, option, args);
-        // 初始化RedisClient
-        redisClient = initRedisClient(undefined, option);
+        init(args);
     }
     /**
-     * 需要进行分词KEY
-     * @param  {Array} arr 键数组
-     * @return {object}   Search对象
+     * 支持express        
+     * @param  {string} key  绑定在appKEY
+     * @param  {object} args 用户传参
+     * @return {fn}      as express middleware 
      */
 
 
     _createClass(Engine, [{
+        key: "supportExpres",
+        value: function supportExpres(key, args) {
+            var self = this;
+            return function (req, res, next) {
+                init(args);
+                req.app[key] = res.app[key] = self;
+                next();
+            };
+        }
+        /**
+         * 需要进行分词KEY
+         * @param  {Array} arr 键数组
+         * @return {object}   Search对象
+         */
+
+    }, {
         key: "cutKeys",
         value: function cutKeys(arr) {
             if (_util2.default.isArray(arr)) {
@@ -185,19 +196,12 @@ var Engine = function () {
         value: function data(d, done) {
             var isAddedData = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
-            if (!(_util2.default.isArray(d) && redisClient)) {
-                done(new Error('....'), null);
-                return;
-            }
+            if (!(_util2.default.isArray(d) && redisClient)) return done(new Error('....'), null);
             //非追加数据清理所有KEY对应UUID
             var fn_a = function fn_a(cb) {
                 if (!isAddedData) {
                     clearAllKeys(redisClient, function (err, r) {
-                        if (err) {
-                            cb('err in cutKeys');
-                            return;
-                        }
-                        cb(null, {});
+                        return cb(err ? 'err in cutKeys' : null, {});
                     });
                 } else {
                     cb(null, {});
@@ -208,21 +212,13 @@ var Engine = function () {
                 n.d = addUUID(d);
                 _async2.default.map(n.d, function (item, cbk) {
                     redisClient.set(item._id, JSON.stringify(item), function (err, r) {
-                        if (err) {
-                            cbk(err);
-                            return;
-                        }
-                        cbk(null, r);
+                        return cbk(err ? err : null, r);
                     });
                 }, function (err, r) {
-                    if (err) {
-                        cb('err in insert data ');
-                        return;
-                    }
-                    cb(null, n);
+                    return cb(err ? 'err in insert data ' : null, n);
                 });
             };
-            // 分词
+            // 分词处理
             var fn_c = function fn_c(n, cb) {
                 if (option.cutKeys) {
                     n.c = cutWords(option.cutKeys, n.d);
@@ -234,11 +230,7 @@ var Engine = function () {
             // 选择db 1 (目前node_redis包不支持切换db,后续版本跟进。)
             var fn_d = function fn_d(n, cb) {
                 redisClient.select(1, function (err, r) {
-                    if (err) {
-                        cb(err);
-                        return;
-                    }
-                    cb(null, n);
+                    return cb(err ? err : null, n);
                 });
             };
             // sadd data 2 redis
@@ -248,30 +240,15 @@ var Engine = function () {
                     var uuids = Array.of.apply(Array, _toConsumableArray(n.c[k]));
                     // 插入redis
                     redisClient.sadd(k, uuids, function (err, r) {
-                        if (err) {
-                            cbk(err);
-                            return;
-                        }
-                        cbk(null, r);
+                        return cbk(err ? err : null, r);
                     });
                 }, function (err, r) {
-                    if (err) {
-                        cb(err);
-                        return;
-                    }
-                    cb(null, n);
+                    return cb(err ? err : null, r);
                 });
             };
-            // excute
+            // 执行瀑布流
             _async2.default.waterfall([fn_a, fn_b, fn_c, fn_e], function (err, r) {
-                if (done) {
-                    done(err, r);
-                } else {
-                    if (err) {
-                        throw new Error(err);
-                        return;
-                    }
-                }
+                return done ? done(err, r) : undefined;
             });
         }
         /**
@@ -294,32 +271,20 @@ var Engine = function () {
     }, {
         key: "query",
         value: function query(d, done) {
-            if (!(_util2.default.isArray(d) && redisClient)) {
-                done(new Error('....'), null);
-                return;
-            }
-            // let r = []
-            // ayc.map(d, (word, callback) => {
 
+            if (!(_util2.default.isArray(d) && redisClient)) return done(new Error('....'), null);
+
+            // 遍历获取分词对应uuids,数据格式 => '北京':Set(uuid1,uuid2)
             var fn_a = function fn_a(cb) {
                 _async2.default.map(d, function (word, cbk) {
-
-                    // get the uuid first
                     redisClient.smembers(word, function (err, r) {
-                        if (err) {
-                            cbk('err in smembers uuid from redis');
-                            return;
-                        }
-                        cbk(null, r);
+                        return cbk(err ? 'err in smembers uuid from redis' : null, r);
                     });
                 }, function (err, r) {
-                    if (err) {
-                        cb(err);
-                        return;
-                    }
-                    cb(null, { uuids: r });
+                    return cb(err ? err : null, { uuids: r });
                 });
             };
+            // 对获取uuids做唯一性处理
             var fn_b = function fn_b(n, cb) {
                 var set = new Set();
                 n.uuids.forEach(function (arr) {
@@ -329,6 +294,7 @@ var Engine = function () {
                 });
                 cb(null, Array.of.apply(Array, _toConsumableArray(set)));
             };
+            // 遍历获取uuid对应ObjectString which save in redis
             var fn_c = function fn_c(n, cb) {
                 _async2.default.map(n, function (uuid, cbk) {
                     //根据uuid去redis获取对象
@@ -345,26 +311,12 @@ var Engine = function () {
                         }
                     });
                 }, function (err, r) {
-                    if (err) {
-                        cb(err);
-                        return;
-                    }
-                    cb(null, r);
+                    return cb(err ? err : null, r);
                 });
             };
+            // 执行瀑布流
             _async2.default.waterfall([fn_a, fn_b, fn_c], function (err, r) {
-                if (done) {
-                    // let arr = []
-                    // r.forEach(item => {
-                    //     arr = arr.concat(item)
-                    // })
-                    done(err, r);
-                } else {
-                    if (err) {
-                        throw new Error(err);
-                        return;
-                    }
-                }
+                return done ? done(err, r) : undefined;
             });
         }
     }]);
