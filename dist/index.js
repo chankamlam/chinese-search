@@ -148,10 +148,9 @@ var Engine = function () {
 
     _createClass(Engine, [{
         key: "supportExpres",
-        value: function supportExpres(key, args) {
+        value: function supportExpres(key) {
             var self = this;
             return function (req, res, next) {
-                init(args);
                 req.app[key] = res.app[key] = self;
                 next();
             };
