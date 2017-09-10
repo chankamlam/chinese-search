@@ -33,9 +33,10 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+'use strict';
 var __IDHEAD__ = "__UUIDOFDATA__";
 // redis客户端
-var redisClient = void 0;
+var redisClient = undefined;
 /**
  * 默认参数
  */
@@ -113,7 +114,7 @@ var cutWords = function cutWords(cutKeys, d) {
 var reMixWords = function reMixWords(returnKeys, word) {
     var n = {};
     returnKeys.forEach(function (k) {
-        if (word[k]) {
+        if (k in word) {
             n[k] = word[k];
         }
     });
@@ -206,7 +207,7 @@ var Search = function () {
             var fn_b = function fn_b(n, cb) {
                 n.d = addUUID(d);
                 _async2.default.map(n.d, function (item, cbk) {
-                    redisClient.set(item._id, item.toString(), function (err, r) {
+                    redisClient.set(item._id, JSON.stringify(item), function (err, r) {
                         if (err) {
                             cbk(err);
                             return;
@@ -297,24 +298,66 @@ var Search = function () {
                 done(new Error('....'), null);
                 return;
             }
-            var r = [];
-            _async2.default.map(d, function (word, cbk) {
-                //根据word去redis获取对象
-                redisClient.smembers(word, function (err, r) {
+            // let r = []
+            // ayc.map(d, (word, callback) => {
+
+            var fn_a = function fn_a(cb) {
+                _async2.default.map(d, function (word, cbk) {
+
+                    // get the uuid first
+                    redisClient.smembers(word, function (err, r) {
+                        if (err) {
+                            cbk('err in smembers uuid from redis');
+                            return;
+                        }
+                        cbk(null, r);
+                    });
+                }, function (err, r) {
                     if (err) {
-                        cbk('err in smembers UUID from redis');
+                        cb(err);
                         return;
                     }
-                    cbk(null, r);
-                    //根据returnKeys重组对象
-                    // if (option.returnKeys) {
-                    //     cbk(null, reMixWords(option.returnKeys, obj))
-                    // } else {
-                    //     cbk(null, obj)
-                    // }
+                    cb(null, { uuids: r });
                 });
-            }, function (err, r) {
+            };
+            var fn_b = function fn_b(n, cb) {
+                var set = new Set();
+                n.uuids.forEach(function (arr) {
+                    arr.forEach(function (uuid) {
+                        set.add(uuid);
+                    });
+                });
+                cb(null, Array.of.apply(Array, _toConsumableArray(set)));
+            };
+            var fn_c = function fn_c(n, cb) {
+                _async2.default.map(n, function (uuid, cbk) {
+                    //根据uuid去redis获取对象
+                    redisClient.get(uuid, function (err, r) {
+                        if (err) {
+                            cbk('err in get data using uuid');
+                            return;
+                        }
+                        // 根据returnKeys重组对象
+                        if (option.returnKeys) {
+                            cbk(null, reMixWords(option.returnKeys, JSON.parse(r)));
+                        } else {
+                            cbk(null, JSON.parse(r));
+                        }
+                    });
+                }, function (err, r) {
+                    if (err) {
+                        cb(err);
+                        return;
+                    }
+                    cb(null, r);
+                });
+            };
+            _async2.default.waterfall([fn_a, fn_b, fn_c], function (err, r) {
                 if (done) {
+                    // let arr = []
+                    // r.forEach(item => {
+                    //     arr = arr.concat(item)
+                    // })
                     done(err, r);
                 } else {
                     if (err) {

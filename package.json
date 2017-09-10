@@ -4,8 +4,8 @@
   "description": "search engine in chinese",
   "main": "index.js",
   "scripts": {
-    "clean": "rm -rf ./dist && mkdir ./dist && babel ./reIndex.js -o ./dist/index.js",
-    "mocha": "mocha -t 2000 --compilers js:babel-core/register ./test/reIndex.js",
+    "clean": "rm -rf ./dist && mkdir ./dist && babel ./index.js -o ./dist/index.js",
+    "mocha": "mocha -t 2000 --compilers js:babel-core/register ./test/index.js",
     "testWithLog": "npm run clean && DEBUG=reIndex:* npm run mocha",
     "test": "npm run clean && npm run mocha",
     "git":"git push && git commit -am "
