@@ -6,11 +6,11 @@
   "scripts": {
     "clean": "rm -rf ./dist && mkdir ./dist && babel ./index.js -o ./dist/index.js",
     "mocha": "mocha -t 2000 --compilers js:babel-core/register ./test/index.js",
-    "testWithLog": "npm run clean && DEBUG=debug:* npm run mocha",
+    "twl": "npm run clean && DEBUG=debug:* npm run mocha",
     "test": "npm run clean && npm run mocha",
-    "git": "git commit -am -- && git push",
-    "publish": "npm publish && git push",
-    "cover":"istanbul cover _mocha -- --compilers js:babel-core/register"
+    "cmt": "git commit -am ",
+    "pub": "npm publish && git push",
+    "cover": "istanbul cover _mocha -- --compilers js:babel-core/register ./test/index.js "
   },
   "author": {
     "name": "chankamlam",
@@ -25,6 +25,7 @@
     "async": "^1.5.2",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
     "istanbul": "^0.4.5",
     "mocha": "^3.5.1",
