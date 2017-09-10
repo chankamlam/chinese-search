@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "clean": "rm -rf ./dist && mkdir ./dist && babel ./reIndex.js -o ./dist/index.js",
-    "mocha": "mocha -t 50000 --compilers js:babel-core/register ./test/reIndex.js",
+    "mocha": "mocha -t 2000 --compilers js:babel-core/register ./test/reIndex.js",
     "testWithLog": "npm run clean && DEBUG=reIndex:* npm run mocha",
-    "test": "npm run clean && npm run mocha"
+    "test": "npm run clean && npm run mocha",
+    "git":"git commit -am 'edit index.js'"
   },
   "author": "ken <919125189@qq.com>",
   "license": "MIT",

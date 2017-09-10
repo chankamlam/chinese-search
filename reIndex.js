@@ -3,6 +3,8 @@ import ayc from "async";
 import util from "util";
 import jieba from "nodejieba";
 import uuid from "uuid/v4";
+
+const __IDHEAD__ = "__UUIDOFDATA__"
 // redis客户端
 let redisClient
 /**
@@ -56,7 +58,7 @@ const initRedisClient = (client, opt) => {
             'port': opt.port
         });
     };
-    return
+    return undefined
 }
 /**
  * 按照KEY分词
@@ -94,25 +96,14 @@ const reMixWords = (returnKeys, word) => {
  * @param  {array} d 需要处理数组
  * @return {array}   处理过数组
  */
-const addUUID = d => {
+const addUUID = (d) => {
     return d.map(obj => {
-        obj['_id'] = uuid()
+        obj['_id'] = __IDHEAD__ + uuid()
         return obj
     })
 }
-/**
- * sadd数组到redis
- * @param  {[type]}   client [description]
- * @param  {[type]}   key    [description]
- * @param  {[type]}   val    [description]
- * @param  {Function} cb     [description]
- * @return {[type]}          [description]
- */
-const sadd2Redis = (client, key, val, cb) => {
-    client.sadd(key, val, (err, r) => {
-        cb(err,r)
-    })
-}
+
+
 /**
  * 中文全文检索引擎
  */
@@ -120,7 +111,7 @@ class Search {
     constructor(args) {
         option = Object.assign({}, option, args)
         // 初始化RedisClient
-        redisClient = initRedisClient(redisClient, option)
+        redisClient = initRedisClient(undefined, option)
     }
     /**
      * 需要进行分词KEY
@@ -151,73 +142,94 @@ class Search {
      * @param  {Boolean}  isAddedData 是否追加数据
      */
     data(d, done, isAddedData = false) {
-        if (util.isArray(d) && redisClient) {
-            //非追加数据清理所有KEY对应UUID
-            let a = cb => {
-                if (isAddedData) {
-                    clearAllKeys(redisClient, (err, r) => {
+        if (!(util.isArray(d) && redisClient)) {
+            done(new Error('....'), null)
+            return
+        }
+        //非追加数据清理所有KEY对应UUID
+        let fn_a = cb => {
+            if (!isAddedData) {
+                clearAllKeys(redisClient, (err, r) => {
+                    if (err) {
                         cb('err in cutKeys')
-                        cb(null, {})
-                    })
-                }
-            }
-            //添加UUID
-            let b = (n, cb) => {
-                n.d = addUUID(d)
-                cb(null, n)
-            }
-            // 分词
-            let c = (n, cb) => {
-                if (option.cutKeys) {
-                    n = cutWords(option.cutKeys, n.d)
-                } else {
-                    cb('need 2 setup the cutKeys before calling the data method')
-                }
-                cb(null, n)
-            }
-            // 选择db 1
-            let d = (n, cb) => {
-                redisClient.select(1, (err, r) => {
-                    if (err) {
-                        cb('err in select redis db 1')
                         return
                     }
-                    cb(null, n)
+                    cb(null, {})
                 })
+            } else {
+                cb(null, {})
             }
-            // sadd data 2 redis
-            let e = (n, cb) => {
-                ayc.map(n.keys, (k, cbk) => {
-                    // 获取UUID数组
-                    let uuids = Array.of(...objs[k])
-                    // 插入redis
-                    sadd2Redis(client, k, uuids, (err,r) => {
-                    	if(err){
-                    		cb('err in sadd data 2 redis')
-                    		return 
-                    	}
-                        cbk(null, r)
-                    })
-                }, (err, r) => {
+        }
+        //添加UUID并插数据如redis
+        let fn_b = (n, cb) => {
+            n.d = addUUID(d)
+            ayc.map(n.d, (item, cbk) => {
+                redisClient.set(item._id, item.toString(), (err, r) => {
                     if (err) {
-                        cb(err)
+                        cbk(err)
                         return
                     }
-                    cb(r)
+                    cbk(null, r)
                 })
-            }
-            // excute
-            ayc.waterfall([a, b, c], (err, r) => {
-                if (done) {
-                    done(err, r)
-                } else {
-                    if (err) {
-                        throw new Error(err)
-                        return
-                    }
+            }, (err, r) => {
+                if (err) {
+                    cb('err in insert data ')
+                    return
                 }
+                cb(null, n)
             })
         }
+        // 分词
+        let fn_c = (n, cb) => {
+            if (option.cutKeys) {
+                n.c = cutWords(option.cutKeys, n.d)
+            } else {
+                cb('need 2 setup the cutKeys before calling the data method')
+            }
+            cb(null, n)
+        }
+        // 选择db 1 (目前node_redis包不支持切换db,后续版本跟进。)
+        let fn_d = (n, cb) => {
+            redisClient.select(1, (err, r) => {
+                if (err) {
+                    cb(err)
+                    return
+                }
+                cb(null, n)
+            })
+        }
+        // sadd data 2 redis
+        let fn_e = (n, cb) => {
+            ayc.map(Object.keys(n.c), (k, cbk) => {
+                // 获取UUID数组
+                let uuids = Array.of(...n.c[k])
+                // 插入redis
+                redisClient.sadd(k, uuids, (err, r) => {
+                    if (err) {
+                        cbk(err)
+                        return
+                    }
+                    cbk(null, r)
+                })
+            }, (err, r) => {
+                if (err) {
+                    cb(err)
+                    return
+                }
+                cb(null, n)
+            })
+        }
+        // excute
+        ayc.waterfall([fn_a, fn_b, fn_c, fn_e], (err, r) => {
+            if (done) {
+                done(err, r)
+            } else {
+                if (err) {
+                    throw new Error(err)
+                    return
+                }
+            }
+        })
     }
     /**
      * 追加数据2Redis
@@ -225,36 +237,56 @@ class Search {
      * @param {Function} done 回调函数
      */
     addData(d, done) {
-        data(d, done, true)
+        this.data(d, done, true)
     }
     /**
      * 检索数据
-     * @param  {array}   arr  关键字数组
+     * @param  {array}   d  关键字数组
      * @param  {Function} done 回调函数
      */
-    query(arr, done) {
-        let r = []
-        if (util.isArray(arr)) {
-            ayc.map(arr, (word, cbk) => {
-                //根据word去redis获取对象
-                //
-                //根据returnKeys重组对象
-                if (option.returnKeys) {
-                    cbk(null, reMixWords(option.returnKeys, obj))
-                } else {
-                    cbk(null, obj)
-                }
-            }, (err, r) => {
-                if (done) {
-                    done(err, r)
-                } else {
-                    if (err) {
-                        throw new Error('err in method query')
-                        return
-                    }
-                }
-            })
+    query(d, done) {
+        if (!(util.isArray(d) && redisClient)) {
+            done(new Error('....'), null)
+            return
         }
+        let r = []
+        ayc.map(d, (word, cbk) => {
+
+        	let fn_a=(cb)=>{
+            //根据word去redis获取对象
+            redisClient.smembers(word,(err,r)=>{
+            	if(err){
+            		cbk('err in smembers UUID from redis')
+            		return
+            	}
+            	cb(null,r)
+            	// cbk(null,r)
+	            //根据returnKeys重组对象
+	            // if (option.returnKeys) {
+	            //     cbk(null, reMixWords(option.returnKeys, obj))
+	            // } else {
+	            //     cbk(null, obj)
+	            // }
+            })
+        	}
+        	let fn_b=(n,cb)=>{
+        		ayc.map(n,(uuid,cbk)=>{
+        			
+        		},(err,r)=>{
+
+        		})
+        	}
+
+        }, (err, r) => {
+            if (done) {
+                done(err, r)
+            } else {
+                if (err) {
+                    throw new Error(err)
+                    return
+                }
+            }
+        })
     }
 }
 export {
@@ -263,6 +295,5 @@ export {
     reMixWords,
     initRedisClient,
     clearAllKeys,
-    sadd2Redis,
     Search
 }

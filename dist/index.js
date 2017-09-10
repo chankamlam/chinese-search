@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Search = exports.sadd2Redis = exports.clearAllKeys = exports.initRedisClient = exports.reMixWords = exports.cutWords = exports.addUUID = undefined;
+exports.Search = exports.clearAllKeys = exports.initRedisClient = exports.reMixWords = exports.cutWords = exports.addUUID = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -33,6 +33,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var __IDHEAD__ = "__UUIDOFDATA__";
 // redis客户端
 var redisClient = void 0;
 /**
@@ -85,7 +86,7 @@ var initRedisClient = function initRedisClient(client, opt) {
             'port': opt.port
         });
     };
-    return;
+    return undefined;
 };
 /**
  * 按照KEY分词
@@ -125,23 +126,11 @@ var reMixWords = function reMixWords(returnKeys, word) {
  */
 var addUUID = function addUUID(d) {
     return d.map(function (obj) {
-        obj['_id'] = (0, _v2.default)();
+        obj['_id'] = __IDHEAD__ + (0, _v2.default)();
         return obj;
     });
 };
-/**
- * sadd数组到redis
- * @param  {[type]}   client [description]
- * @param  {[type]}   key    [description]
- * @param  {[type]}   val    [description]
- * @param  {Function} cb     [description]
- * @return {[type]}          [description]
- */
-var sadd2Redis = function sadd2Redis(client, key, val, cb) {
-    client.sadd(key, val, function (err, r) {
-        cb(err, r);
-    });
-};
+
 /**
  * 中文全文检索引擎
  */
@@ -152,7 +141,7 @@ var Search = function () {
 
         option = Object.assign({}, option, args);
         // 初始化RedisClient
-        redisClient = initRedisClient(redisClient, option);
+        redisClient = initRedisClient(undefined, option);
     }
     /**
      * 需要进行分词KEY
@@ -195,73 +184,94 @@ var Search = function () {
         value: function data(d, done) {
             var isAddedData = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
-            if (_util2.default.isArray(d) && redisClient) {
-                //非追加数据清理所有KEY对应UUID
-                var a = function a(cb) {
-                    if (isAddedData) {
-                        clearAllKeys(redisClient, function (err, r) {
-                            cb('err in cutKeys');
-                            cb(null, {});
-                        });
-                    }
-                };
-                //添加UUID
-                var b = function b(n, cb) {
-                    n.d = addUUID(_d);
-                    cb(null, n);
-                };
-                // 分词
-                var c = function c(n, cb) {
-                    if (option.cutKeys) {
-                        n = cutWords(option.cutKeys, n.d);
-                    } else {
-                        cb('need 2 setup the cutKeys before calling the data method');
-                    }
-                    cb(null, n);
-                };
-                // 选择db 1
-                var _d = function _d(n, cb) {
-                    redisClient.select(1, function (err, r) {
-                        if (err) {
-                            cb('err in select redis db 1');
-                            return;
-                        }
-                        cb(null, n);
-                    });
-                };
-                // sadd data 2 redis
-                var e = function e(n, cb) {
-                    _async2.default.map(n.keys, function (k, cbk) {
-                        // 获取UUID数组
-                        var uuids = Array.of.apply(Array, _toConsumableArray(objs[k]));
-                        // 插入redis
-                        sadd2Redis(client, k, uuids, function (err, r) {
-                            if (err) {
-                                cb('err in sadd data 2 redis');
-                                return;
-                            }
-                            cbk(null, r);
-                        });
-                    }, function (err, r) {
-                        if (err) {
-                            cb(err);
-                            return;
-                        }
-                        cb(r);
-                    });
-                };
-                // excute
-                _async2.default.waterfall([a, b, c], function (err, r) {
-                    if (done) {
-                        done(err, r);
-                    } else {
-                        if (err) {
-                            throw new Error(err);
-                            return;
-                        }
-                    }
-                });
+            if (!(_util2.default.isArray(d) && redisClient)) {
+                done(new Error('....'), null);
+                return;
             }
+            //非追加数据清理所有KEY对应UUID
+            var fn_a = function fn_a(cb) {
+                if (!isAddedData) {
+                    clearAllKeys(redisClient, function (err, r) {
+                        if (err) {
+                            cb('err in cutKeys');
+                            return;
+                        }
+                        cb(null, {});
+                    });
+                } else {
+                    cb(null, {});
+                }
+            };
+            //添加UUID并插数据如redis
+            var fn_b = function fn_b(n, cb) {
+                n.d = addUUID(d);
+                _async2.default.map(n.d, function (item, cbk) {
+                    redisClient.set(item._id, item.toString(), function (err, r) {
+                        if (err) {
+                            cbk(err);
+                            return;
+                        }
+                        cbk(null, r);
+                    });
+                }, function (err, r) {
+                    if (err) {
+                        cb('err in insert data ');
+                        return;
+                    }
+                    cb(null, n);
+                });
+            };
+            // 分词
+            var fn_c = function fn_c(n, cb) {
+                if (option.cutKeys) {
+                    n.c = cutWords(option.cutKeys, n.d);
+                } else {
+                    cb('need 2 setup the cutKeys before calling the data method');
+                }
+                cb(null, n);
+            };
+            // 选择db 1 (目前node_redis包不支持切换db,后续版本跟进。)
+            var fn_d = function fn_d(n, cb) {
+                redisClient.select(1, function (err, r) {
+                    if (err) {
+                        cb(err);
+                        return;
+                    }
+                    cb(null, n);
+                });
+            };
+            // sadd data 2 redis
+            var fn_e = function fn_e(n, cb) {
+                _async2.default.map(Object.keys(n.c), function (k, cbk) {
+                    // 获取UUID数组
+                    var uuids = Array.of.apply(Array, _toConsumableArray(n.c[k]));
+                    // 插入redis
+                    redisClient.sadd(k, uuids, function (err, r) {
+                        if (err) {
+                            cbk(err);
+                            return;
+                        }
+                        cbk(null, r);
+                    });
+                }, function (err, r) {
+                    if (err) {
+                        cb(err);
+                        return;
+                    }
+                    cb(null, n);
+                });
+            };
+            // excute
+            _async2.default.waterfall([fn_a, fn_b, fn_c, fn_e], function (err, r) {
+                if (done) {
+                    done(err, r);
+                } else {
+                    if (err) {
+                        throw new Error(err);
+                        return;
+                    }
+                }
+            });
         }
         /**
          * 追加数据2Redis
@@ -272,39 +282,47 @@ var Search = function () {
     }, {
         key: "addData",
         value: function addData(d, done) {
-            data(d, done, true);
+            this.data(d, done, true);
         }
         /**
          * 检索数据
-         * @param  {array}   arr  关键字数组
+         * @param  {array}   d  关键字数组
          * @param  {Function} done 回调函数
          */
 
     }, {
         key: "query",
-        value: function query(arr, done) {
-            var r = [];
-            if (_util2.default.isArray(arr)) {
-                _async2.default.map(arr, function (word, cbk) {
-                    //根据word去redis获取对象
-                    //
-                    //根据returnKeys重组对象
-                    if (option.returnKeys) {
-                        cbk(null, reMixWords(option.returnKeys, obj));
-                    } else {
-                        cbk(null, obj);
-                    }
-                }, function (err, r) {
-                    if (done) {
-                        done(err, r);
-                    } else {
-                        if (err) {
-                            throw new Error('err in method query');
-                            return;
-                        }
-                    }
-                });
+        value: function query(d, done) {
+            if (!(_util2.default.isArray(d) && redisClient)) {
+                done(new Error('....'), null);
+                return;
             }
+            var r = [];
+            _async2.default.map(d, function (word, cbk) {
+                //根据word去redis获取对象
+                redisClient.smembers(word, function (err, r) {
+                    if (err) {
+                        cbk('err in smembers UUID from redis');
+                        return;
+                    }
+                    cbk(null, r);
+                    //根据returnKeys重组对象
+                    // if (option.returnKeys) {
+                    //     cbk(null, reMixWords(option.returnKeys, obj))
+                    // } else {
+                    //     cbk(null, obj)
+                    // }
+                });
+            }, function (err, r) {
+                if (done) {
+                    done(err, r);
+                } else {
+                    if (err) {
+                        throw new Error(err);
+                        return;
+                    }
+                }
+            });
         }
     }]);
 
@@ -316,5 +334,4 @@ exports.cutWords = cutWords;
 exports.reMixWords = reMixWords;
 exports.initRedisClient = initRedisClient;
 exports.clearAllKeys = clearAllKeys;
-exports.sadd2Redis = sadd2Redis;
 exports.Search = Search;
