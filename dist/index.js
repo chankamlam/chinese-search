@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Search = exports.clearAllKeys = exports.initRedisClient = exports.reMixWords = exports.cutWords = exports.addUUID = undefined;
+exports.Search = exports.sadd2Redis = exports.clearAllKeys = exports.initRedisClient = exports.reMixWords = exports.cutWords = exports.addUUID = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -29,6 +29,8 @@ var _v2 = _interopRequireDefault(_v);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 // redis客户端
@@ -41,14 +43,14 @@ var option = {
     port: 6379
     /**
      * 删除所有现存分词KEY
-     * @param  {fn} cbk 
+     * @param  {fn} done 
      */
-};var clearAllKeys = function clearAllKeys(cbk) {
-    if (!redisClient) {
+};var clearAllKeys = function clearAllKeys(client, done) {
+    if (!client) {
         return;
     }
     var a = function a(cb) {
-        redisClient.keys('*', function (err, r) {
+        client.keys('*', function (err, r) {
             if (err) {
                 cb("err in get all keys from redis");
                 return;
@@ -57,32 +59,33 @@ var option = {
         });
     };
     var b = function b(n, cb) {
-        redisClient.del(n, function (err, r) {
+        if (n.length <= 0) {
+            cb(null);
+            return;
+        }
+        client.del(n, function (err, r) {
             if (err) {
                 cb("err in delete all keys from redis");
                 return;
             };
-            cb(null);
+            cb(null, r);
         });
     };
-    async.waterfall([a, b], function (err, r) {
-        if (err) {
-            throw new Error(err);
-            return;
-        };
-        cbk();
+    _async2.default.waterfall([a, b], function (err, r) {
+        done(err, r);
     });
 };
 /**
  * 初始化RedisClient
  */
-var initRedisClient = function initRedisClient(opt) {
-    if (!redisClient) {
-        redisClient = _redis2.default.createClient({
+var initRedisClient = function initRedisClient(client, opt) {
+    if (!client) {
+        return _redis2.default.createClient({
             'host': opt.host,
             'port': opt.port
         });
     };
+    return;
 };
 /**
  * 按照KEY分词
@@ -126,6 +129,22 @@ var addUUID = function addUUID(d) {
         return obj;
     });
 };
+/**
+ * sadd数组到redis
+ * @param  {[type]}   client [description]
+ * @param  {[type]}   key    [description]
+ * @param  {[type]}   val    [description]
+ * @param  {Function} cb     [description]
+ * @return {[type]}          [description]
+ */
+var sadd2Redis = function sadd2Redis(client, key, val, cb) {
+    client.sadd(key, val, function (err, r) {
+        cb(err, r);
+    });
+};
+/**
+ * 中文全文检索引擎
+ */
 
 var Search = function () {
     function Search(args) {
@@ -133,7 +152,7 @@ var Search = function () {
 
         option = Object.assign({}, option, args);
         // 初始化RedisClient
-        // initRedisClient(this.opt)
+        redisClient = initRedisClient(redisClient, option);
     }
     /**
      * 需要进行分词KEY
@@ -176,18 +195,19 @@ var Search = function () {
         value: function data(d, done) {
             var isAddedData = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
-            if (_util2.default.isArray(d)) {
+            if (_util2.default.isArray(d) && redisClient) {
                 //非追加数据清理所有KEY对应UUID
                 var a = function a(cb) {
                     if (isAddedData) {
-                        clearAllKeys(function () {
+                        clearAllKeys(redisClient, function (err, r) {
+                            cb('err in cutKeys');
                             cb(null, {});
                         });
                     }
                 };
                 //添加UUID
                 var b = function b(n, cb) {
-                    n.d = addUUID(d);
+                    n.d = addUUID(_d);
                     cb(null, n);
                 };
                 // 分词
@@ -199,14 +219,46 @@ var Search = function () {
                     }
                     cb(null, n);
                 };
-                // 保存到redis
+                // 选择db 1
+                var _d = function _d(n, cb) {
+                    redisClient.select(1, function (err, r) {
+                        if (err) {
+                            cb('err in select redis db 1');
+                            return;
+                        }
+                        cb(null, n);
+                    });
+                };
+                // sadd data 2 redis
+                var e = function e(n, cb) {
+                    _async2.default.map(n.keys, function (k, cbk) {
+                        // 获取UUID数组
+                        var uuids = Array.of.apply(Array, _toConsumableArray(objs[k]));
+                        // 插入redis
+                        sadd2Redis(client, k, uuids, function (err, r) {
+                            if (err) {
+                                cb('err in sadd data 2 redis');
+                                return;
+                            }
+                            cbk(null, r);
+                        });
+                    }, function (err, r) {
+                        if (err) {
+                            cb(err);
+                            return;
+                        }
+                        cb(r);
+                    });
+                };
+                // excute
                 _async2.default.waterfall([a, b, c], function (err, r) {
-                    if (err) {
-                        throw new Error(err);
-                        return;
-                    }
                     if (done) {
-                        done();
+                        done(err, r);
+                    } else {
+                        if (err) {
+                            throw new Error(err);
+                            return;
+                        }
                     }
                 });
             }
@@ -238,16 +290,19 @@ var Search = function () {
                     //
                     //根据returnKeys重组对象
                     if (option.returnKeys) {
-                        cbk(reMixWords(option.returnKeys, obj));
+                        cbk(null, reMixWords(option.returnKeys, obj));
                     } else {
-                        cbk(obj);
+                        cbk(null, obj);
                     }
                 }, function (err, r) {
-                    if (err) {
-                        throw new Error('err in method query');
-                        return;
+                    if (done) {
+                        done(err, r);
+                    } else {
+                        if (err) {
+                            throw new Error('err in method query');
+                            return;
+                        }
                     }
-                    done(r);
                 });
             }
         }
@@ -261,4 +316,5 @@ exports.cutWords = cutWords;
 exports.reMixWords = reMixWords;
 exports.initRedisClient = initRedisClient;
 exports.clearAllKeys = clearAllKeys;
+exports.sadd2Redis = sadd2Redis;
 exports.Search = Search;
