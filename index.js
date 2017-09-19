@@ -11,9 +11,9 @@ let redisClient = undefined
  * 默认参数
  */
 let option = {
-    host: '127.0.0.1',
-    port: 6379,
-    type: 0,
+    host: '127.0.0.1', // host ip
+    port: 6379,        // port of host
+    type: 0,           // redis:0;mamcache:1
 }
 /**
  * 删除所有现存分词KEY
@@ -38,7 +38,8 @@ const initRedisClient = (client, opt) => {
     if (!client) {
         return redis.createClient({
             'host': opt.host,
-            'port': opt.port
+            'port': opt.port,
+            'type': opt.type,
         });
     };
     return undefined
