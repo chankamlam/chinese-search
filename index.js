@@ -12,11 +12,12 @@ let redisClient = undefined
  */
 let option = {
     host: '127.0.0.1',
-    port: 6379
+    port: 6379,
+    type: 0,
 }
 /**
  * 删除所有现存分词KEY
- * @param  {fn} done 
+ * @param  {fn} done
  */
 const clearAllKeys = (client, done) => {
     if (!client) return
@@ -44,8 +45,8 @@ const initRedisClient = (client, opt) => {
 }
 /**
  * 按照KEY分词
- * @param  {array} cutKeys 
- * @param  {array} d     
+ * @param  {array} cutKeys
+ * @param  {array} d
  */
 const cutWords = (cutKeys, d) => {
     let n = {}
@@ -101,10 +102,10 @@ class Engine {
         init(args)
     }
     /**
-     * 支持express        
+     * 支持express
      * @param  {string} key  绑定在appKEY
      * @param  {object} args 用户传参
-     * @return {fn}      as express middleware 
+     * @return {fn}      as express middleware
      */
     supportExpres(key) {
         let self = this
