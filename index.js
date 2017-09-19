@@ -13,7 +13,7 @@ let redisClient = undefined
 let option = {
     host: '127.0.0.1',
     port: 6379,
-    type: 0,
+    type: 0
 }
 /**
  * 删除所有现存分词KEY
