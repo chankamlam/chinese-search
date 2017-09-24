@@ -1,6 +1,6 @@
 {
   "name": "chinese-search",
-  "version": "1.0.13",
+  "version": "1.0.16",
   "description": "chinese-search是一个全文检索组件，基层实现依赖 nodejieba 中文分词 和 redis 集合存储。",
   "main": "dist/index.js",
   "scripts": {
@@ -9,13 +9,14 @@
     "twl": "npm run clean && DEBUG=debug:* npm run mocha",
     "test": "npm run clean && npm run mocha",
     "cmt": "git commit -am ",
-    "pub": "npm publish && git push",
+    "pub": "git push && npm publish",
     "cover": "istanbul cover _mocha -- --compilers js:babel-core/register ./test/index.js "
   },
   "author": {
     "name": "chankamlam",
     "email": "919125189@qq.com"
   },
+  "keywords":['chineseSearchEngine','中文全文检索','searchEngine','fullTextSearchEngine'],
   "repository": {
     "type": "git",
     "url": "https://github.com/chankamlam/chinese-search"
