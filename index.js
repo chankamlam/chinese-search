@@ -4,7 +4,7 @@ import util from "util";
 import jieba from "nodejieba";
 import uuid from "uuid/v4";
 'use strict';
-const __IDHEAD__ = "__UUIDOFDATA__"
+const __IDHEAD__ = "__GUESSCITY__"
 // redis客户端
 let redisClient = undefined
 /**
@@ -20,7 +20,9 @@ let option = {
  * @param  {fn} done
  */
 const clearAllKeys = (client, done) => {
-    if (!client) return
+    if (!client) {
+      console.error("redis haven't been init");
+    }
     let a = (cb) => {
         client.keys('*', (err, r) => cb(err ? "err in get all keys from redis" : null, r))
     }
@@ -66,6 +68,12 @@ const cutWords = (cutKeys, d) => {
     })
     return n
 }
+/**
+ * [reMixWords description]
+ * @param  {[type]} returnKeys [description]
+ * @param  {[type]} word       [description]
+ * @return {[type]}            [description]
+ */
 const reMixWords = (returnKeys, word) => {
     let n = {}
     returnKeys.forEach((k) => {
@@ -147,15 +155,17 @@ class Engine {
         if (!(util.isArray(d) && redisClient)) return done(new Error('....'), null)
         //非追加数据清理所有KEY对应UUID
         let fn_a = cb => {
+            let n = {}
+            n.d = d
             if (!isAddedData) {
-                clearAllKeys(redisClient, (err, r) => cb(err ? 'err in cutKeys' : null, {}))
+                clearAllKeys(redisClient, (err, r) => cb(err ? 'err in clearAllKeys' : null, n))
             } else {
-                cb(null, {})
+                cb(null, n)
             }
         }
         //添加UUID并插数据如redis
         let fn_b = (n, cb) => {
-            n.d = addUUID(d)
+            n.d = addUUID(n.d)
             ayc.map(n.d, (item, cbk) => {
                 redisClient.set(item._id, JSON.stringify(item), (err, r) => cbk(err ? err : null, r))
             }, (err, r) => cb(err ? 'err in insert data ' : null, n))
@@ -164,10 +174,10 @@ class Engine {
         let fn_c = (n, cb) => {
             if (option.cutKeys) {
                 n.c = cutWords(option.cutKeys, n.d)
+                cb(null, n)
             } else {
                 cb('need 2 setup the cutKeys before calling the data method')
             }
-            cb(null, n)
         }
         // 选择db 1 (目前node_redis包不支持切换db,后续版本跟进。)
         let fn_d = (n, cb) => {
@@ -183,15 +193,23 @@ class Engine {
             }, (err, r) => cb(err ? err : null, r))
         }
         // 执行瀑布流
-        ayc.waterfall([fn_a, fn_b, fn_c, fn_e], (err, r) => done ? done(err, r) : undefined)
+        ayc.waterfall([fn_a, fn_b, fn_c, fn_e], (err, r) => done && done(err, r))
     }
     /**
-     * 追加数据2Redis
-     * @param {array}   d    被检索数据
-     * @param {Function} done 回调函数
+     * 追加数据到缓存
+     * @param {array}   d    数据
+     * @param {Function} doneFn 回调函数
      */
-    addData(d, done) {
-        this.data(d, done, true)
+    addData(d, doneFn) {
+        this.data(d, doneFn, true)
+    }
+    /**
+     * 追加数据到缓存
+     * @param  {[type]} d      [数据]
+     * @param  {[type]} doneFn [回调函数]
+     */
+    appendData(d,doneFn){
+        this.data(d, doneFn, true)
     }
     /**
      * 检索数据

@@ -1,13 +1,19 @@
+```ascii
+     ________    _                           _____                      __  
+    / ____/ /_  (_)___  ___  ________       / ___/___  ____ ___________/ /_
+   / /   / __ \/ / __ \/ _ \/ ___/ _ \______\__ \/ _ \/ __ `/ ___/ ___/ __ \
+  / /___/ / / / / / / /  __(__  )  __/_____/__/ /  __/ /_/ / /  / /__/ / / /
+  \____/_/ /_/_/_/ /_/\___/____/\___/     /____/\___/\__,_/_/   \___/_/ /_/
+
+```
 # 简介
 
 ```js
 
-    chinese-search是一个全文检索组件，
-    基层实现依赖nodejieba中文分词和redis集合存储。
+    Chinese-Search 是一个全文检索组件,基层实现依赖nodejieba中文分词和redis集合存储。
 
-    chinese-search is a full text search in chinese, 
-    base on nodejieba and redis.
-    it is easy, small and fast than using mysql.
+    Chinese-Search is a full text search in chinese,base on nodejieba and redis,
+    and it is easy, small and fast than by using mysql with sql like.
 
 ```
 
@@ -15,8 +21,8 @@
 
 ```js
 
-    npm install chinese-search
-    
+    npm i chinese-search -s
+
 ```
 
 # 使用
@@ -54,7 +60,7 @@
                       return
                    }
                          // 正常在这里可以使用query()
-                         // 
+                         //
                 })
 
     // 查询
@@ -72,18 +78,19 @@
     app.use(search.Engine({'host':'127.0.0.1','port':4000}).supportExpres('SEARCHENGINE'))
     // 你可以在这些地方找到引擎对象，然后对它操作
     // req.app['SEARCHENGINE'],res.app['SEARCHENGINE'],app['SEARCHENGINE']
-    app['SEARCHENGINE'].cutKeys(['name','title']) 
+    app['SEARCHENGINE'].cutKeys(['name','title'])
             .data(data,(err,r) => {
                    if(err){
                         // 错误处理
                       return
                    }
                          // 正常在这里可以使用query()
-                         // 
+                         //
                 })
 
 ```
 # API
+
 ### cutKeys()
 ```js
 
@@ -94,6 +101,7 @@
     s.cutKeys(['name','title','description'])
 
 ```
+
 ### data()
 ```js
 
@@ -105,10 +113,11 @@
                       return
                    }
                          // 正常在这里可以使用query()
-                         // 
+                         //
                 })
 
 ```
+
 ### addData()
 ```js
 
@@ -130,6 +139,7 @@
       }])
 
 ```
+
 ### returnKeys()
 ```js
 
@@ -190,6 +200,7 @@
     })
 
 ```
+
 # license
 ```js
 
