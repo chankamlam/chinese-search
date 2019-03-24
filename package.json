@@ -21,10 +21,10 @@
     "url": "https://github.com/chankamlam/chinese-search"
   },
   "babel": {
-  "presets": [
-    "es2015"
-  ]
-},
+    "presets": [
+      "es2015"
+    ]
+  },
   "license": "MIT",
   "dependencies": {
     "async": "^1.5.2",
