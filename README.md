@@ -52,41 +52,34 @@
     }]
 
     // 启动Redis服务，然后填入数据。
-    var s = search.Engine({'host':'127.0.0.1','port':4000})
-            .cutKeys(['name','title'])   // 声明分词的KEY
-            .data(data,(err,r) => {
-                   if(err){
-                        // 错误处理
+    var s = search.Engine({
+      cache:{
+        host:'127.0.0.1',
+        port:4000,
+        type:'redis'
+      }
+    })
+    .cutKeys(['desc','title'])   // 声明分词的KEY
+    .data(data,(err,r) => {
+           if(err){
+              console.error(err)
+              return
+           }
+           // 查询
+            s
+             .returnKeys(['name','title','id']) // 声明数据返回包含KEY
+             .query(['A'],(err,r)=>{            // 关键字数组
+               if (err) {
+                 console.error(err);
                       return
-                   }
-                         // 正常在这里可以使用query()
-                         //
-                })
-
-    // 查询
-    s.returnKeys(['name','title','id']) // 声明数据返回包含KEY
-     .query(['A'],(err,r)=>{            // 关键字数组
-    	if (err) {
-    		console.log(err);
-            return
-    	};
-        console.log(r);   
-        // 结果：[ { name: 'C++权威指南-full', title: 'A', id: 2 } ]
+               };
+                  console.log(r);   
+                // 结果：[ { name: 'C++权威指南-full', title: 'A', id: 2 } ]
+            })
     })
 
-    ### Express使用
-    app.use(search.Engine({'host':'127.0.0.1','port':4000}).supportExpres('SEARCHENGINE'))
-    // 你可以在这些地方找到引擎对象，然后对它操作
-    // req.app['SEARCHENGINE'],res.app['SEARCHENGINE'],app['SEARCHENGINE']
-    app['SEARCHENGINE'].cutKeys(['name','title'])
-            .data(data,(err,r) => {
-                   if(err){
-                        // 错误处理
-                      return
-                   }
-                         // 正常在这里可以使用query()
-                         //
-                })
+
+
 
 ```
 # API

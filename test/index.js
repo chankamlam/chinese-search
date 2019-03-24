@@ -21,24 +21,20 @@ describe(' - 测试公共方法调用', function() {
     })
     it('test method addUUID', function() {
         let d = addUUID([{
-            id: 0,
             'name': 'aAa',
             'title': '你好吗？老师!'
         }, {
-            id: 1,
             'name': 'bBb',
             'title': '中午还没有吃饭呢！aAa'
         }])
         log(d);
-        d[0].should.be.have.property("_id")
+        d.should.matchEach(function(value) { value.should.have.property('_id') });
     });
     it('test method cutWords', function() {
         let objs = cutWords(['name', 'title'], addUUID([{
-            id: 0,
             'name': 'aAa',
             'title': '你好吗？老师!'
         }, {
-            id: 1,
             'name': 'bBb',
             'title': '老师！他中午还没有吃饭呢!aAa'
         }]))
@@ -57,8 +53,8 @@ describe(' - 测试公共方法调用', function() {
             'id': 10
         })
         log(word)
-        word.should.be.have.property('name')
-        word.should.be.have.property('title')
+        word.should.have.property('name')
+        word.should.have.property('title')
 
     });
     it('test method initRedisClient', function(done) {
@@ -66,7 +62,7 @@ describe(' - 测试公共方法调用', function() {
             'host': '127.0.0.1',
             'port': 6379
         }
-        let client = initRedisClient(null, opt)
+        let client = initRedisClient(null, {cache:opt})
         client.echo('helo', (err, r) => {
             log(r)
             r.should.eql('helo')
@@ -78,7 +74,7 @@ describe(' - 测试公共方法调用', function() {
             'host': '127.0.0.1',
             'port': 6379
         }
-        let client = initRedisClient(null, opt)
+        let client = initRedisClient(null, {cache:opt})
         clearAllKeys(client, (err, r) => {
             if (err) {
                 log(err)
@@ -91,14 +87,17 @@ describe(' - 测试公共方法调用', function() {
 
 });
 describe(' - 测试API', function() {
+    let s=null
+    let opt = {
+        'host': '127.0.0.1',
+        'port': 6379
+    }
+    beforeEach(() => {
+        s = new Engine({cache:opt})
+    })
     it('test API cutKeys && data', function(done) {
-        let opt = {
-            'host': '127.0.0.1',
-            'port': 6379
-        }
-        let s = new Engine(opt)
         s.cutKeys(['name', 'title'])
-            .data([{
+            .initData([{
                 id: 0,
                 'name': 'aAa',
                 'title': '你好吗？老师!'
@@ -115,14 +114,9 @@ describe(' - 测试API', function() {
                 }
             })
     });
-    it('test API addData', function(done) {
-        let opt = {
-            'host': '127.0.0.1',
-            'port': 6379
-        }
-        let s = new Engine(opt)
+    it('test API appendData', function(done) {
         s.cutKeys(['name', 'title'])
-            .data([{
+            .initData([{
                 id: 0,
                 'name': 'aAa',
                 'title': '你好吗？老师!'
@@ -131,7 +125,7 @@ describe(' - 测试API', function() {
                 'name': 'bBb',
                 'title': '老师！他中午还没有吃饭呢!aAa'
             }], (err, r) => {
-                s.addData([{ id: 3, 'name': 'kkk', 'title': 'aAa' }], (err, r) => {
+                s.appendData([{ id: 3, 'name': 'kkk', 'title': 'aAa' }], (err, r) => {
                     if (err) {
                         log(err)
                     } else {
@@ -142,13 +136,8 @@ describe(' - 测试API', function() {
             })
     });
     it('test API query', function(done) {
-        let opt = {
-            'host': '127.0.0.1',
-            'port': 6379
-        }
-        let s = new Engine(opt)
         s.cutKeys(['name', 'title'])
-            .data([{
+            .initData([{
                 id: 0,
                 'name': 'aAa',
                 'title': '你好吗？老师!'
@@ -164,10 +153,10 @@ describe(' - 测试API', function() {
                         } else {
                             log(r)
                             r.length.should.eql(1)
-                            r[0].should.be.have.property('id')
-                            r[0].should.be.have.property('name')
-                            r[0].should.be.have.property('title')
-                            r[0].should.be.have.property('_id')
+                            r[0].should.have.property('id')
+                            r[0].should.have.property('name')
+                            r[0].should.have.property('title')
+                            r[0].should.have.property('_id')
                             done()
                         }
                     })
@@ -177,13 +166,8 @@ describe(' - 测试API', function() {
             })
     });
     it('test API returnKeys', function(done) {
-        let opt = {
-            'host': '127.0.0.1',
-            'port': 6379
-        }
-        let s = new Engine(opt)
         s.cutKeys(['name', 'title'])
-            .data([{
+            .initData([{
                 id: 0,
                 'name': 'aAa',
                 'title': '你好吗？老师!'
@@ -199,9 +183,9 @@ describe(' - 测试API', function() {
                         } else {
                             log(r)
                             r.length.should.eql(1)
-                            r[0].should.be.have.property('id')
-                            r[0].should.be.have.property('name')
-                            r[0].should.be.have.property('title')
+                            r[0].should.have.property('id')
+                            r[0].should.have.property('name')
+                            r[0].should.have.property('title')
                             done()
                         }
                     })
@@ -210,6 +194,16 @@ describe(' - 测试API', function() {
                 }
             })
     });
+    it('test API clearAll', function(done) {
+        s.clearAll((err, r) => {
+            if (err) {
+                log(err)
+            } else {
+                log(r)
+                done()
+            }
+        })
+    });
 });
-// 
+//
 //
