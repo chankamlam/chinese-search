@@ -62,7 +62,7 @@
     }]
 
     // [1]启动Redis服务，然后填入数据。
-    const s = search.Engine({
+    const s = new search.Engine({
       cache:{
         host:'127.0.0.1',
         port:3679,
@@ -102,7 +102,7 @@
         pwd:'Ken5201314',
         type:'mysql'
     }}
-    const s = search.Engine(opt)
+    const s = new search.Engine(opt)
     s.cutKeys(['name','title'])
         .initData(sql,(err, r) => {
           if(err){
@@ -140,7 +140,7 @@
 ### intData()
 ```js
 
-    var s = search.Engine({'host':'127.0.0.1','port':4000})
+    var s = new search.Engine({'host':'127.0.0.1','port':4000})
             .cutKeys(['name','title'])   // 声明分词的KEY
             .initData(data,(err,r) => {      // data必须是个数组
                    if(err){
