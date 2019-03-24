@@ -7,15 +7,10 @@
 
 ```
 # 简介
+Chinese-Search is a full text search in chinese,base on nodejieba and redis, support to using sql pull data from mysql,
+and it is easy, small and fast.
 
-```js
-
-    Chinese-Search 是一个全文检索组件,基层实现依赖nodejieba中文分词和redis存储。
-
-    Chinese-Search is a full text search in chinese,base on nodejieba and redis,
-    and it is easy, small and fast than by using mysql with sql like.
-
-```
+Chinese-Search 是一个全文检索组件,基层实现依赖nodejieba中文分词和redis存储。
 
 # 安装
 
@@ -33,6 +28,12 @@
    npm run test
 
 ```
+
+# 下一个版本 what is the next
+
+planning to support oracle/mssql in the next version
+
+下一个版本即将支持oracle/mssql数据库，直接导入数据作为检索数据
 
 # 使用
 
