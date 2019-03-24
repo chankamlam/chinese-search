@@ -16,7 +16,7 @@
     "name": "chankamlam",
     "email": "919125189@qq.com"
   },
-  "keywords":['fullTextSearchEngine','ChineseSearchEngine','中文全文检索引擎','全文搜索','SearchEngine'],
+  "keywords":["fullTextSearchEngine","ChineseSearchEngine","中文全文检索引擎","全文搜索","SearchEngine"],
   "repository": {
     "type": "git",
     "url": "https://github.com/chankamlam/chinese-search"
