@@ -5,7 +5,8 @@ import {
     addUUID,
     cutWords,
     reMixWords,
-    initRedisClient,
+    initCacheClient,
+    initDataClient,
     clearAllKeys,
     Engine,
 } from "../dist/index";
@@ -19,7 +20,7 @@ describe(' - 测试公共方法调用', function() {
     beforeEach(() => {
         s = new Engine({})
     })
-    it('test method addUUID', function() {
+    it('test common method -> addUUID', function() {
         let d = addUUID([{
             'name': 'aAa',
             'title': '你好吗？老师!'
@@ -30,7 +31,7 @@ describe(' - 测试公共方法调用', function() {
         log(d);
         d.should.matchEach(function(value) { value.should.have.property('_id') });
     });
-    it('test method cutWords', function() {
+    it('test common method -> cutWords', function() {
         let objs = cutWords(['name', 'title'], addUUID([{
             'name': 'aAa',
             'title': '你好吗？老师!'
@@ -44,7 +45,7 @@ describe(' - 测试公共方法调用', function() {
         objs['老师'].size.should.eql(2)
         objs['！'].size.should.eql(1)
     });
-    it('test method reMixWords', function() {
+    it('test common method -> reMixWords', function() {
 
         let word = reMixWords(['name', 'title'], {
             'name': 'ken',
@@ -57,24 +58,41 @@ describe(' - 测试公共方法调用', function() {
         word.should.have.property('title')
 
     });
-    it('test method initRedisClient', function(done) {
+    it('test common method -> initCacheClient', function(done) {
         let opt = {
             'host': '127.0.0.1',
             'port': 6379
         }
-        let client = initRedisClient(null, {cache:opt})
+        let client = initCacheClient(null, {cache:opt})
         client.echo('helo', (err, r) => {
             log(r)
             r.should.eql('helo')
             done()
         })
     });
-    it('test method clearAllKeys', function(done) {
+    it('test common method -> initDataClient', function(done) {
+      let sql = 'select * from book'
+      let opt = {
+          host:'127.0.0.1',
+          port:3306,
+          db:'test',
+          user:'root',
+          pwd:'Ken5201314',
+          type:'mysql'
+      }
+        let client = initDataClient(null, {data:opt})
+        client.raw(sql)
+        .then(res=>{
+          res[0].length.should.eql(3)
+          done()
+        })
+    });
+    it('test common method -> clearAllKeys', function(done) {
         let opt = {
             'host': '127.0.0.1',
             'port': 6379
         }
-        let client = initRedisClient(null, {cache:opt})
+        let client = initCacheClient(null, {cache:opt})
         clearAllKeys(client, (err, r) => {
             if (err) {
                 log(err)
@@ -86,16 +104,133 @@ describe(' - 测试公共方法调用', function() {
     });
 
 });
-describe(' - 测试API', function() {
+
+
+describe(' - 测试API(SQL填入数据)', function() {
     let s=null
-    let opt = {
+    let sql = 'select * from book'
+    let opt = {cache:{
         'host': '127.0.0.1',
         'port': 6379
-    }
+    },
+    data:{
+        host:'127.0.0.1',
+        port:3306,
+        db:'test',
+        user:'root',
+        pwd:'Ken5201314',
+        type:'mysql'
+    }}
     beforeEach(() => {
-        s = new Engine({cache:opt})
+        s = new Engine(opt)
     })
-    it('test API cutKeys && data', function(done) {
+    it('test API -> cutKeys && initData with sql', function(done) {
+        s.cutKeys(['book_desc', 'book_title'])
+            .initData(sql,(err, r) => {
+                if (err) {
+                  log(err)
+                } else {
+                  log(r)
+                  done()
+                }
+            })
+    });
+    // it('test API -> appendData', function(done) {
+    //     s.cutKeys(['name', 'title'])
+    //         .initData([{
+    //             id: 0,
+    //             'name': 'aAa',
+    //             'title': '你好吗？老师!'
+    //         }, {
+    //             id: 1,
+    //             'name': 'bBb',
+    //             'title': '老师！他中午还没有吃饭呢!aAa'
+    //         }], (err, r) => {
+    //             s.appendData([{ id: 3, 'name': 'kkk', 'title': 'aAa' }], (err, r) => {
+    //                 if (err) {
+    //                     log(err)
+    //                 } else {
+    //                     log(r)
+    //                     done()
+    //                 }
+    //             })
+    //         })
+    // });
+    it('test API -> query', function(done) {
+        s.cutKeys(['book_desc', 'book_title'])
+            .initData(sql, (err, r) => {
+                if (err) {
+                  log(err)
+                } else {
+                  s.query(['PHP'], (err, r) => {
+                    if (err) {
+                      log(err)
+                    } else {
+                      log(r)
+                      r.length.should.eql(1)
+                      r[0].should.have.property('book_id')
+                      r[0].should.have.property('book_desc')
+                      r[0].should.have.property('book_title')
+                      r[0].should.have.property('_id')
+                      done()
+                    }
+                  })
+                }
+            })
+    });
+    it('test API -> returnKeys', function(done) {
+        s.cutKeys(['book_desc', 'book_anthor'])
+            .initData(sql, (err, r) => {
+                if (!err) {
+                    s.returnKeys(['book_id', 'book_desc', 'book_title'])
+                    .query(['ben'], (err, r) => {
+                        if (err) {
+                            log(err)
+                        } else {
+                            log(r)
+                            r.length.should.eql(2)
+                            r[0].should.have.property('book_id')
+                            r[0].should.have.property('book_desc')
+                            r[0].should.have.property('book_title')
+                            r[0].should.not.have.keys('_id')
+                            done()
+                        }
+                    })
+                } else {
+                    log(err)
+                }
+            })
+    });
+    it('test API -> clearAll', function(done) {
+        s.clearAll((err, r) => {
+            if (err) {
+                log(err)
+            } else {
+                log(r)
+                done()
+            }
+        })
+    });
+});
+
+describe(' - 测试API(数组填入数据)', function() {
+    let s=null
+    let opt = {cache:{
+        'host': '127.0.0.1',
+        'port': 6379
+    },
+    data:{
+        host:'127.0.0.1',
+        port:3306,
+        db:'test',
+        user:'root',
+        pwd:'Ken5201314',
+        type:'mysql'
+    }}
+    beforeEach(() => {
+        s = new Engine(opt)
+    })
+    it('test API -> cutKeys && initData with data', function(done) {
         s.cutKeys(['name', 'title'])
             .initData([{
                 id: 0,
@@ -106,15 +241,15 @@ describe(' - 测试API', function() {
                 'name': 'bBb',
                 'title': '老师！他中午还没有吃饭呢!aAa'
             }], (err, r) => {
-                if (!err) {
-                    log(r)
-                    done()
+                if (err) {
+                  log(err)
                 } else {
-                    log(err)
+                  log(r)
+                  done()
                 }
             })
     });
-    it('test API appendData', function(done) {
+    it('test API -> appendData', function(done) {
         s.cutKeys(['name', 'title'])
             .initData([{
                 id: 0,
@@ -135,7 +270,7 @@ describe(' - 测试API', function() {
                 })
             })
     });
-    it('test API query', function(done) {
+    it('test API -> query', function(done) {
         s.cutKeys(['name', 'title'])
             .initData([{
                 id: 0,
@@ -165,7 +300,7 @@ describe(' - 测试API', function() {
                 }
             })
     });
-    it('test API returnKeys', function(done) {
+    it('test API -> returnKeys', function(done) {
         s.cutKeys(['name', 'title'])
             .initData([{
                 id: 0,
@@ -177,7 +312,8 @@ describe(' - 测试API', function() {
                 'title': '老师！他中午还没有吃饭呢!'
             }], (err, r) => {
                 if (!err) {
-                    s.returnKeys(['id', 'name', 'title']).query(['aAa'], (err, r) => {
+                    s.returnKeys(['id', 'name', 'title'])
+                    .query(['aAa'], (err, r) => {
                         if (err) {
                             log(err)
                         } else {
@@ -186,6 +322,7 @@ describe(' - 测试API', function() {
                             r[0].should.have.property('id')
                             r[0].should.have.property('name')
                             r[0].should.have.property('title')
+                            r[0].should.not.have.keys('_id')
                             done()
                         }
                     })
@@ -194,7 +331,7 @@ describe(' - 测试API', function() {
                 }
             })
     });
-    it('test API clearAll', function(done) {
+    it('test API -> clearAll', function(done) {
         s.clearAll((err, r) => {
             if (err) {
                 log(err)
@@ -205,5 +342,3 @@ describe(' - 测试API', function() {
         })
     });
 });
-//
-//

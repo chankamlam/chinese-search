@@ -49,9 +49,9 @@ const clearAllKeys = (client, done) => {
     ayc.waterfall([fn_a, fn_b,fn_c], (err, r) => done(err, r))
 }
 /**
- * 初始化RedisClient
+ * 初始化CacheClient
  */
-const initRedisClient = (client, opt) => {
+const initCacheClient = (client, opt) => {
     if (!client) {
         const cache = opt.cache
         return redis.createClient({
@@ -63,11 +63,33 @@ const initRedisClient = (client, opt) => {
     return undefined
 }
 /**
+ * 初始化DataClient
+ */
+const initDataClient = (client, opt) => {
+    if (!client) {
+        const data = opt.data
+        return require('knex')({
+                  client: data.type,
+                  connection: {
+                    host : data.host,
+                    user : data.user,
+                    password : data.pwd,
+                    database : data.db,
+                    port : data.port
+                  }
+                });
+    };
+    return undefined
+}
+/**
  * 按照KEY分词
  * @param  {array} cutKeys
  * @param  {array} d
  */
 const cutWords = (cutKeys, d) => {
+  if(!cutKeys){
+    cutKeys=[]
+  }
     let n = {}
     cutKeys.forEach(key => {
         d.forEach(obj => {
@@ -91,6 +113,7 @@ const cutWords = (cutKeys, d) => {
  * @return {object}            返回对象
  */
 const reMixWords = (returnKeys, word) => {
+  if(returnKeys.length<=0) return word
     let n = {}
     returnKeys.forEach((k) => {
         if (k in word) {
@@ -116,8 +139,74 @@ const addUUID = (d) => {
  */
 const init = (args) => {
     option = Object.assign({}, option, args)
-    // 初始化RedisClient
-    cacheClient = initRedisClient(undefined, option)
+    // 初始化缓存客户端
+    cacheClient = initCacheClient(undefined, option)
+    // 初始化数据库客户端
+    dataClient = initDataClient(undefined,option)
+}
+/**
+ * 以数组初始化数据库
+ * @param  {Array}   d                    数据
+ * @param  {Function} done                 回调方法
+ * @param  {Boolean}  [isAppendData=false] 是否追加数据
+ */
+const initDataWithArray=(d, done, isAppendData = false)=>{
+  //非追加数据清理所有KEY对应UUID
+  let fn_a = cb => {
+      let n = {}
+      n.d = d
+      if (!isAppendData) {
+          clearAllKeys(cacheClient, (err, r) => cb(err ? 'err in clearAllKeys' : null, n))
+      } else {
+          cb(null, n)
+      }
+  }
+  //添加UUID并插数据如redis
+  let fn_b = (n, cb) => {
+      n.d = addUUID(n.d)
+      ayc.map(n.d, (item, cbk) => {
+          cacheClient.set(item._id, JSON.stringify(item), (err, r) => cbk(err ? err : null, r))
+      }, (err, r) => cb(err ? 'err in insert data ' : null, n))
+  }
+  // 分词处理
+  let fn_c = (n, cb) => {
+      if (option.cutKeys && option.cutKeys.length>0) {
+          n.c = cutWords(option.cutKeys, n.d)
+          cb(null, n)
+      } else {
+          cb('need to setup the cutKeys before calling the data method')
+      }
+  }
+  // 选择db 1 (目前node_redis包不支持切换db,后续版本跟进。)
+  let fn_d = (n, cb) => {
+      cacheClient.select(1, (err, r) => cb(err ? err : null, n))
+  }
+  // sadd data 2 redis
+  let fn_e = (n, cb) => {
+      ayc.map(Object.keys(n.c), (k, cbk) => {
+          // 获取UUID数组
+          let uuids = Array.of(...n.c[k])
+          // 插入redis
+          cacheClient.sadd(k, uuids, (err, r) => cbk(err ? err : null, r))
+      }, (err, r) => cb(err ? err : null, r))
+  }
+  // 执行瀑布流
+  ayc.waterfall([fn_a, fn_b, fn_c, fn_e], (err, r) => done && done(err, r))
+}
+/**
+ * 以SQL初始化数据库
+ * @param  {string}   d                    sql
+ * @param  {Function} done                 回调方法
+ * @param  {Boolean}  [isAppendData=false] 是否追加数据
+ */
+const initDataWithSQL=(d, done, isAppendData = false)=>{
+  dataClient.raw(d)
+  .then(res=>{
+    initDataWithArray(res[0],done,isAppendData)
+  })
+  .catch(err=>{
+    done(err,null)
+  })
 }
 /**
  * 中文全文检索引擎
@@ -147,6 +236,8 @@ class Engine {
     cutKeys(arr) {
         if (util.isArray(arr)) {
             option['cutKeys'] = arr
+        }else{
+            option['cutKeys'] = []
         }
         return this
     }
@@ -158,6 +249,8 @@ class Engine {
     returnKeys(arr) {
         if (util.isArray(arr)) {
             option['returnKeys'] = arr
+        }else{
+            option['returnKeys'] = []
         }
         return this
     }
@@ -165,51 +258,18 @@ class Engine {
      * 初始化redis数据
      * @param  {[type]}   d           被检索数据
      * @param  {Function} done        回调函数
-     * @param  {Boolean}  isAddedData 是否追加数据
+     * @param  {Boolean}  isAppendData 是否追加数据
      */
-    initData(d, done, isAddedData = false) {
-        if (!(util.isArray(d) && cacheClient)) return done(new Error('....'), null)
-        //非追加数据清理所有KEY对应UUID
-        let fn_a = cb => {
-            let n = {}
-            n.d = d
-            if (!isAddedData) {
-                clearAllKeys(cacheClient, (err, r) => cb(err ? 'err in clearAllKeys' : null, n))
-            } else {
-                cb(null, n)
-            }
+    initData(d, done, isAppendData = false) {
+        // if (!(util.isArray(d) && cacheClient)) return done(new Error('err in initData'), null)
+        // if (!((typeof d == 'string') && dataClient)) return done(new Error('err in initData'), null)
+        option.returnKeys && (option.returnKeys=[])
+        if(util.isArray(d) && cacheClient){
+          return initDataWithArray(d,done,isAppendData)
         }
-        //添加UUID并插数据如redis
-        let fn_b = (n, cb) => {
-            n.d = addUUID(n.d)
-            ayc.map(n.d, (item, cbk) => {
-                cacheClient.set(item._id, JSON.stringify(item), (err, r) => cbk(err ? err : null, r))
-            }, (err, r) => cb(err ? 'err in insert data ' : null, n))
+        else if(typeof d == 'string' && dataClient){
+          return initDataWithSQL(d,done,isAppendData)
         }
-        // 分词处理
-        let fn_c = (n, cb) => {
-            if (option.cutKeys && option.cutKeys.length>0) {
-                n.c = cutWords(option.cutKeys, n.d)
-                cb(null, n)
-            } else {
-                cb('need to setup the cutKeys before calling the data method')
-            }
-        }
-        // 选择db 1 (目前node_redis包不支持切换db,后续版本跟进。)
-        let fn_d = (n, cb) => {
-            cacheClient.select(1, (err, r) => cb(err ? err : null, n))
-        }
-        // sadd data 2 redis
-        let fn_e = (n, cb) => {
-            ayc.map(Object.keys(n.c), (k, cbk) => {
-                // 获取UUID数组
-                let uuids = Array.of(...n.c[k])
-                // 插入redis
-                cacheClient.sadd(k, uuids, (err, r) => cbk(err ? err : null, r))
-            }, (err, r) => cb(err ? err : null, r))
-        }
-        // 执行瀑布流
-        ayc.waterfall([fn_a, fn_b, fn_c, fn_e], (err, r) => done && done(err, r))
     }
     /**
      * 追加数据到缓存
@@ -279,7 +339,10 @@ export {
     addUUID,
     cutWords,
     reMixWords,
-    initRedisClient,
+    initCacheClient,
+    initDataClient,
+    initDataWithArray,
+    initDataWithSQL,
     clearAllKeys,
     Engine
 }

@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Engine = exports.clearAllKeys = exports.initRedisClient = exports.reMixWords = exports.cutWords = exports.addUUID = undefined;
+exports.Engine = exports.clearAllKeys = exports.initDataWithSQL = exports.initDataWithArray = exports.initDataClient = exports.initCacheClient = exports.reMixWords = exports.cutWords = exports.addUUID = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -29,9 +29,9 @@ var _v2 = _interopRequireDefault(_v);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 'use strict';
 var __IDHEAD__ = "__GUESSCITY__";
@@ -84,9 +84,9 @@ var option = {
     });
 };
 /**
- * 初始化RedisClient
+ * 初始化CacheClient
  */
-var initRedisClient = function initRedisClient(client, opt) {
+var initCacheClient = function initCacheClient(client, opt) {
     if (!client) {
         var cache = opt.cache;
         return _redis2.default.createClient({
@@ -98,11 +98,33 @@ var initRedisClient = function initRedisClient(client, opt) {
     return undefined;
 };
 /**
+ * 初始化DataClient
+ */
+var initDataClient = function initDataClient(client, opt) {
+    if (!client) {
+        var data = opt.data;
+        return require('knex')({
+            client: data.type,
+            connection: {
+                host: data.host,
+                user: data.user,
+                password: data.pwd,
+                database: data.db,
+                port: data.port
+            }
+        });
+    };
+    return undefined;
+};
+/**
  * 按照KEY分词
  * @param  {array} cutKeys
  * @param  {array} d
  */
 var cutWords = function cutWords(cutKeys, d) {
+    if (!cutKeys) {
+        cutKeys = [];
+    }
     var n = {};
     cutKeys.forEach(function (key) {
         d.forEach(function (obj) {
@@ -126,6 +148,7 @@ var cutWords = function cutWords(cutKeys, d) {
  * @return {object}            返回对象
  */
 var reMixWords = function reMixWords(returnKeys, word) {
+    if (returnKeys.length <= 0) return word;
     var n = {};
     returnKeys.forEach(function (k) {
         if (k in word) {
@@ -151,8 +174,90 @@ var addUUID = function addUUID(d) {
  */
 var init = function init(args) {
     option = Object.assign({}, option, args);
-    // 初始化RedisClient
-    cacheClient = initRedisClient(undefined, option);
+    // 初始化缓存客户端
+    cacheClient = initCacheClient(undefined, option);
+    // 初始化数据库客户端
+    dataClient = initDataClient(undefined, option);
+};
+/**
+ * 以数组初始化数据库
+ * @param  {Array}   d                    数据
+ * @param  {Function} done                 回调方法
+ * @param  {Boolean}  [isAppendData=false] 是否追加数据
+ */
+var initDataWithArray = function initDataWithArray(d, done) {
+    var isAppendData = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+    //非追加数据清理所有KEY对应UUID
+    var fn_a = function fn_a(cb) {
+        var n = {};
+        n.d = d;
+        if (!isAppendData) {
+            clearAllKeys(cacheClient, function (err, r) {
+                return cb(err ? 'err in clearAllKeys' : null, n);
+            });
+        } else {
+            cb(null, n);
+        }
+    };
+    //添加UUID并插数据如redis
+    var fn_b = function fn_b(n, cb) {
+        n.d = addUUID(n.d);
+        _async2.default.map(n.d, function (item, cbk) {
+            cacheClient.set(item._id, JSON.stringify(item), function (err, r) {
+                return cbk(err ? err : null, r);
+            });
+        }, function (err, r) {
+            return cb(err ? 'err in insert data ' : null, n);
+        });
+    };
+    // 分词处理
+    var fn_c = function fn_c(n, cb) {
+        if (option.cutKeys && option.cutKeys.length > 0) {
+            n.c = cutWords(option.cutKeys, n.d);
+            cb(null, n);
+        } else {
+            cb('need to setup the cutKeys before calling the data method');
+        }
+    };
+    // 选择db 1 (目前node_redis包不支持切换db,后续版本跟进。)
+    var fn_d = function fn_d(n, cb) {
+        cacheClient.select(1, function (err, r) {
+            return cb(err ? err : null, n);
+        });
+    };
+    // sadd data 2 redis
+    var fn_e = function fn_e(n, cb) {
+        _async2.default.map(Object.keys(n.c), function (k, cbk) {
+            // 获取UUID数组
+            var uuids = Array.of.apply(Array, _toConsumableArray(n.c[k]));
+            // 插入redis
+            cacheClient.sadd(k, uuids, function (err, r) {
+                return cbk(err ? err : null, r);
+            });
+        }, function (err, r) {
+            return cb(err ? err : null, r);
+        });
+    };
+    // 执行瀑布流
+    _async2.default.waterfall([fn_a, fn_b, fn_c, fn_e], function (err, r) {
+        return done && done(err, r);
+    });
+};
+/**
+ * 以SQL初始化数据库
+ * @param  {string}   d                    sql
+ * @param  {Function} done                 回调方法
+ * @param  {Boolean}  [isAppendData=false] 是否追加数据
+ */
+var initDataWithSQL = function initDataWithSQL(d, done) {
+    var isAppendData = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+    dataClient.raw(d).then(function (res) {
+        initDataWithArray(res[0], done, isAppendData);
+    }).catch(function (err) {
+        done(err, null);
+    });
 };
 /**
  * 中文全文检索引擎
@@ -192,6 +297,8 @@ var Engine = function () {
         value: function cutKeys(arr) {
             if (_util2.default.isArray(arr)) {
                 option['cutKeys'] = arr;
+            } else {
+                option['cutKeys'] = [];
             }
             return this;
         }
@@ -206,6 +313,8 @@ var Engine = function () {
         value: function returnKeys(arr) {
             if (_util2.default.isArray(arr)) {
                 option['returnKeys'] = arr;
+            } else {
+                option['returnKeys'] = [];
             }
             return this;
         }
@@ -213,70 +322,22 @@ var Engine = function () {
          * 初始化redis数据
          * @param  {[type]}   d           被检索数据
          * @param  {Function} done        回调函数
-         * @param  {Boolean}  isAddedData 是否追加数据
+         * @param  {Boolean}  isAppendData 是否追加数据
          */
 
     }, {
         key: "initData",
         value: function initData(d, done) {
-            var isAddedData = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+            var isAppendData = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
-            if (!(_util2.default.isArray(d) && cacheClient)) return done(new Error('....'), null);
-            //非追加数据清理所有KEY对应UUID
-            var fn_a = function fn_a(cb) {
-                var n = {};
-                n.d = d;
-                if (!isAddedData) {
-                    clearAllKeys(cacheClient, function (err, r) {
-                        return cb(err ? 'err in clearAllKeys' : null, n);
-                    });
-                } else {
-                    cb(null, n);
-                }
-            };
-            //添加UUID并插数据如redis
-            var fn_b = function fn_b(n, cb) {
-                n.d = addUUID(n.d);
-                _async2.default.map(n.d, function (item, cbk) {
-                    cacheClient.set(item._id, JSON.stringify(item), function (err, r) {
-                        return cbk(err ? err : null, r);
-                    });
-                }, function (err, r) {
-                    return cb(err ? 'err in insert data ' : null, n);
-                });
-            };
-            // 分词处理
-            var fn_c = function fn_c(n, cb) {
-                if (option.cutKeys && option.cutKeys.length > 0) {
-                    n.c = cutWords(option.cutKeys, n.d);
-                    cb(null, n);
-                } else {
-                    cb('need to setup the cutKeys before calling the data method');
-                }
-            };
-            // 选择db 1 (目前node_redis包不支持切换db,后续版本跟进。)
-            var fn_d = function fn_d(n, cb) {
-                cacheClient.select(1, function (err, r) {
-                    return cb(err ? err : null, n);
-                });
-            };
-            // sadd data 2 redis
-            var fn_e = function fn_e(n, cb) {
-                _async2.default.map(Object.keys(n.c), function (k, cbk) {
-                    // 获取UUID数组
-                    var uuids = Array.of.apply(Array, _toConsumableArray(n.c[k]));
-                    // 插入redis
-                    cacheClient.sadd(k, uuids, function (err, r) {
-                        return cbk(err ? err : null, r);
-                    });
-                }, function (err, r) {
-                    return cb(err ? err : null, r);
-                });
-            };
-            // 执行瀑布流
-            _async2.default.waterfall([fn_a, fn_b, fn_c, fn_e], function (err, r) {
-                return done && done(err, r);
-            });
+            // if (!(util.isArray(d) && cacheClient)) return done(new Error('err in initData'), null)
+            // if (!((typeof d == 'string') && dataClient)) return done(new Error('err in initData'), null)
+            option.returnKeys && (option.returnKeys = []);
+            if (_util2.default.isArray(d) && cacheClient) {
+                return initDataWithArray(d, done, isAppendData);
+            } else if (typeof d == 'string' && dataClient) {
+                return initDataWithSQL(d, done, isAppendData);
+            }
         }
         /**
          * 追加数据到缓存
@@ -364,6 +425,9 @@ var Engine = function () {
 exports.addUUID = addUUID;
 exports.cutWords = cutWords;
 exports.reMixWords = reMixWords;
-exports.initRedisClient = initRedisClient;
+exports.initCacheClient = initCacheClient;
+exports.initDataClient = initDataClient;
+exports.initDataWithArray = initDataWithArray;
+exports.initDataWithSQL = initDataWithSQL;
 exports.clearAllKeys = clearAllKeys;
 exports.Engine = Engine;

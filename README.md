@@ -10,7 +10,7 @@
 
 ```js
 
-    Chinese-Search 是一个全文检索组件,基层实现依赖nodejieba中文分词和redis集合存储。
+    Chinese-Search 是一个全文检索组件,基层实现依赖nodejieba中文分词和redis存储。
 
     Chinese-Search is a full text search in chinese,base on nodejieba and redis,
     and it is easy, small and fast than by using mysql with sql like.
@@ -25,12 +25,22 @@
 
 ```
 
+# 测试
+
+```
+
+   npm i
+   npm run test
+
+```
+
 # 使用
 
 ```js
 
     ## ES5
     var search = require('chinese-search');
+
     ## ES6
     import search from 'chinese-search'
 
@@ -51,21 +61,22 @@
         'id': 3
     }]
 
-    // 启动Redis服务，然后填入数据。
-    var s = search.Engine({
+    // [1]启动Redis服务，然后填入数据。
+    const s = search.Engine({
       cache:{
         host:'127.0.0.1',
-        port:4000,
+        port:3679,
         type:'redis'
       }
     })
-    .cutKeys(['desc','title'])   // 声明分词的KEY
-    .data(data,(err,r) => {
+
+    s.cutKeys(['name','title'])   // 声明分词的KEY
+    .initData(data,(err,r) => {
            if(err){
               console.error(err)
               return
            }
-           // 查询
+           // 全文检索
             s
              .returnKeys(['name','title','id']) // 声明数据返回包含KEY
              .query(['A'],(err,r)=>{            // 关键字数组
@@ -77,8 +88,39 @@
                 // 结果：[ { name: 'C++权威指南-full', title: 'A', id: 2 } ]
             })
     })
-
-
+    // [2]启动Redis服务，mysql数据库，使用sql语句填入数据。
+    let sql = 'select * from book'
+    let opt = {cache:{
+        'host': '127.0.0.1',
+        'port': 6379
+    },
+    data:{
+        host:'127.0.0.1',
+        port:3306,
+        db:'test',
+        user:'root',
+        pwd:'Ken5201314',
+        type:'mysql'
+    }}
+    const s = search.Engine(opt)
+    s.cutKeys(['name','title'])
+        .initData(sql,(err, r) => {
+          if(err){
+             console.error(err)
+             return
+          }
+          // 全文检索
+           s
+            .returnKeys(['name','title','id']) // 声明数据返回包含KEY
+            .query(['A'],(err,r)=>{            // 关键字数组
+              if (err) {
+                console.error(err);
+                return
+              };
+                console.log(r);   
+               // 结果：[ { name: 'C++权威指南-full', title: 'A', id: 2 } ]
+           })
+        })
 
 
 ```
@@ -95,12 +137,12 @@
 
 ```
 
-### data()
+### intData()
 ```js
 
     var s = search.Engine({'host':'127.0.0.1','port':4000})
             .cutKeys(['name','title'])   // 声明分词的KEY
-            .data(data,(err,r) => {      // data必须是个数组
+            .initData(data,(err,r) => {      // data必须是个数组
                    if(err){
                         // 错误处理
                       return
@@ -111,20 +153,12 @@
 
 ```
 
-### addData()
+### appendData()
 ```js
-
-     // 追加被检索数据
-     s.addData([{
-        'name': 'NodeJS权威指南',
-        'title': 'NodeJS',
-        'author':'ken',
-        'id': 4
-     }])
 
     // 重声明分词的KEY并追加被检索数据
      s.cutKeys(['name']) // 重声明分词的KEY，非重声明则按照初始化设定
-      .addData([{
+      .appendData([{
         'name': 'NodeJS权威指南',
         'title': 'NodeJS',
         'author':'ken',
@@ -193,6 +227,12 @@
     })
 
 ```
+# author
+
+  author : chankamlam(Ken)
+
+  Email : 919125189@qq.com
+
 
 # license
 ```js
