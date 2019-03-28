@@ -2,29 +2,30 @@
   "name": "chinese-search",
   "version": "1.1.4",
   "description": "Chinese-Search is a full text search in chinese,base on nodejieba and redis,support to using sql pull data from mysql,and it is easy,small and fast.",
-  "main": "dist/index.js",
+  "main": "./index.js",
   "scripts": {
-    "clean": "rm -rf ./dist && mkdir ./dist && babel ./index.js -o ./dist/index.js",
-    "mocha": "mocha -t 2000 --require babel-core/register ./test/index.js",
-    "twl": "npm run clean && DEBUG=debug:* npm run mocha",
-    "test": "npm run clean && npm run mocha",
+    "clear": "rm -rf coverage ./.nyc_output",
+    "mocha": "mocha -t 2000 ./test/index.js --exit",
+    "debug": "npm run clean && DEBUG=debug:* npm run mocha",
+    "test": "npm run clear && npm run mocha",
     "cmt": "git commit -am ",
     "pub": "git push && npm publish",
-    "cover": "istanbul cover _mocha -- --require babel-core/register ./test/index.js "
+    "cover": "npm run clear && nyc --reporter=html --reporter=text mocha -t 2000 ./test/index.js --exit"
   },
   "author": {
     "name": "chankamlam",
     "email": "919125189@qq.com"
   },
-  "keywords":["fullTextSearchEngine","ChineseSearchEngine","中文全文检索引擎","全文搜索","SearchEngine"],
+  "keywords": [
+    "fullTextSearchEngine",
+    "ChineseSearchEngine",
+    "中文全文检索引擎",
+    "全文搜索",
+    "SearchEngine"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/chankamlam/chinese-search"
-  },
-  "babel": {
-    "presets": [
-      "es2015"
-    ]
   },
   "license": "MIT",
   "dependencies": {
@@ -37,15 +38,11 @@
   },
   "devDependencies": {
     "async": "^1.5.2",
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-es2015": "^6.24.1",
-    "istanbul": "^0.4.5",
     "knex": "^0.16.3",
     "mocha": "^6.0.2",
     "mysql": "^2.16.0",
     "nodejieba": "^2.3.0",
+    "nyc": "^13.3.0",
     "redis": "^2.8.0",
     "should": "^13.0.1",
     "uuid": "^3.1.0"

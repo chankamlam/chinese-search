@@ -1,8 +1,8 @@
-import redis from "redis";
-import ayc from "async";
-import util from "util";
-import jieba from "nodejieba";
-import uuid from "uuid/v4";
+const redis =require("redis");
+const ayc =require("async");
+const util =require("util");
+const jieba =require("nodejieba");
+const uuid =require("uuid/v4");
 'use strict';
 const __IDHEAD__ = "__GUESSCITY__"
 // 缓存客户端
@@ -211,56 +211,57 @@ const initDataWithSQL=(d, done, isAppendData = false)=>{
 /**
  * 中文全文检索引擎
  */
-class Engine {
-    constructor(args) {
+function Engine (args) {
+    // constructor(args) {
         init(args)
-    }
+    // }
+    const E =  {
     /**
      * 支持express
      * @param  {string} key  绑定在appKEY
      * @param  {object} args 用户传参
      * @return {fn}      as express middleware
      */
-    supportExpres(key) {
+    supportExpres:(key)=> {
         let self = this
         return (req, res, next) => {
             req.app[key] = res.app[key] = self
             next()
         }
-    }
+    },
     /**
      * 需要进行分词KEY
      * @param  {Array} arr 键数组
      * @return {object}   Search对象
      */
-    cutKeys(arr) {
+    cutKeys:(arr)=> {
         if (util.isArray(arr)) {
             option['cutKeys'] = arr
         }else{
             option['cutKeys'] = []
         }
-        return this
-    }
+        return E
+    },
     /**
      * 需要返回的KEY
      * @param  {array} arr 键数组
      * @return {object}   Search对象
      */
-    returnKeys(arr) {
+    returnKeys:(arr)=> {
         if (util.isArray(arr)) {
             option['returnKeys'] = arr
         }else{
             option['returnKeys'] = []
         }
-        return this
-    }
+        return E
+    },
     /**
      * 初始化redis数据
      * @param  {[type]}   d           被检索数据
      * @param  {Function} done        回调函数
      * @param  {Boolean}  isAppendData 是否追加数据
      */
-    initData(d, done, isAppendData = false) {
+    initData:(d, done, isAppendData = false) =>{
         // if (!(util.isArray(d) && cacheClient)) return done(new Error('err in initData'), null)
         // if (!((typeof d == 'string') && dataClient)) return done(new Error('err in initData'), null)
         option.returnKeys && (option.returnKeys=[])
@@ -270,21 +271,21 @@ class Engine {
         else if(typeof d == 'string' && dataClient){
           return initDataWithSQL(d,done,isAppendData)
         }
-    }
+    },
     /**
      * 追加数据到缓存
      * @param  {[type]} d      [数据]
      * @param  {[type]} doneFn [回调函数]
      */
-    appendData(d,doneFn){
-        this.initData(d, doneFn, true)
-    }
+    appendData:(d,doneFn)=>{
+        E.initData(d, doneFn, true)
+    },
     /**
      * 检索数据
      * @param  {array}   d  关键字数组
      * @param  {Function} done 回调函数
      */
-    query(d, done) {
+    query:(d, done)=> {
 
         if (!(util.isArray(d) && cacheClient)) return done(new Error('....'), null)
 
@@ -326,23 +327,34 @@ class Engine {
         }
         // 执行瀑布流
         ayc.waterfall([fn_a, fn_b, fn_c], (err, r) => done && done(err, r) )
-    }
+    },
     /**
      * 清空所有数据
      * @param  {Function} done 回调函数
      */
-    clearAll(done){
+    clearAll:(done)=>{
       clearAllKeys(cacheClient,done)
     }
+  }
+  return E
 }
-export {
-    addUUID,
-    cutWords,
-    reMixWords,
-    initCacheClient,
-    initDataClient,
-    initDataWithArray,
-    initDataWithSQL,
-    clearAllKeys,
-    Engine
-}
+exports.addUUID = addUUID
+exports.cutWords = cutWords
+exports.reMixWords = reMixWords
+exports.initCacheClient = initCacheClient
+exports.initDataClient = initDataClient
+exports.initDataWithArray = initDataWithArray
+exports.initDataWithArray = initDataWithArray
+exports.clearAllKeys = clearAllKeys
+exports.Engine = Engine
+
+//     addUUID,
+//     cutWords,
+//     reMixWords,
+//     initCacheClient,
+//     initDataClient,
+//     initDataWithArray,
+//     initDataWithSQL,
+//     clearAllKeys,
+//     Engine
+// }

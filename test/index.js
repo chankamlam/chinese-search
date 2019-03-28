@@ -1,7 +1,12 @@
-import mocha from "mocha";
-import should from "should";
-import ayc from "async";
-import {
+const mocha  = require("mocha");
+const should = require("should");
+const ayc = require("async");
+
+const search = require("../index.js");
+
+const debug = require("debug");
+
+const {
     addUUID,
     cutWords,
     reMixWords,
@@ -9,9 +14,7 @@ import {
     initDataClient,
     clearAllKeys,
     Engine,
-} from "../dist/index";
-import debug from "debug";
-
+} = search
 
 let log = debug("debug:log")
 
