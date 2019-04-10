@@ -6,6 +6,7 @@
   \____/_/ /_/_/_/ /_/\___/____/\___/     /____/\___/\__,_/_/   \___/_/ /_/
 
 ```
+[![Build Status](https://travis-ci.org/chankamlam/chinese-search.svg?branch=master)](https://travis-ci.org/chankamlam/chinese-search)
 # 简介
 Chinese-Search is a full text search in chinese,base on nodejieba and redis, support to using sql pull data from mysql,
 and it is easy, small and fast.
