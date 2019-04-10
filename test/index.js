@@ -80,7 +80,7 @@ describe(' - 测试公共方法调用', function() {
           port:3306,
           db:'test',
           user:'root',
-          pwd:'',
+          pwd:'Ken5201314',
           type:'mysql'
       }
         let client = initDataClient(null, {data:opt})
@@ -121,7 +121,7 @@ describe(' - 测试API(SQL填入数据)', function() {
         port:3306,
         db:'test',
         user:'root',
-        pwd:'',
+        pwd:'Ken5201314',
         type:'mysql'
     }}
     beforeEach(() => {

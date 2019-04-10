@@ -4,14 +4,10 @@
   "description": "Chinese-Search is a full text search in chinese,base on nodejieba and redis,support to using sql pull data from mysql,and it is easy,small and fast.",
   "main": "./dist/index.js",
   "scripts": {
-    "clear": "rm -rf coverage ./.nyc_output",
-    "mocha": "mocha -t 2000 ./test/index.js --exit",
-    "debug": "npm run clean && DEBUG=debug:* npm run mocha",
-    "test": "npm run mocha",
+    "mocha": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec --exit",
+    "test": "npm run mocha && codecov",
     "cmt": "git commit -am ",
-    "pub": "git push && npm publish",
-    "cover": "npm run clear && nyc --reporter=html --reporter=text mocha -t 2000 ./test/index.js --exit",
-    "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov --exit && codecov"
+    "pub": "git push && npm publish"
   },
   "author": {
     "name": "chankamlam",
@@ -43,7 +39,6 @@
     "mocha": "^6.0.2",
     "mysql": "^2.16.0",
     "nodejieba": "^2.3.0",
-    "nyc": "^13.3.0",
     "redis": "^2.8.0",
     "should": "^13.0.1",
     "uuid": "^3.1.0"
