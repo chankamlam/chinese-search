@@ -1,11 +1,11 @@
-
+```ascii
      ________    _                           _____                      __  
     / ____/ /_  (_)___  ___  ________       / ___/___  ____ ___________/ /_
    / /   / __ \/ / __ \/ _ \/ ___/ _ \______\__ \/ _ \/ __ `/ ___/ ___/ __ \
   / /___/ / / / / / / /  __(__  )  __/_____/__/ /  __/ /_/ / /  / /__/ / / /
   \____/_/ /_/_/_/ /_/\___/____/\___/     /____/\___/\__,_/_/   \___/_/ /_/
 
-
+```
 [![Build Status](https://travis-ci.org/chankamlam/chinese-search.svg?branch=master)](https://travis-ci.org/chankamlam/chinese-search)
 [![codecov](https://codecov.io/gh/chankamlam/chinese-search/branch/master/graph/badge.svg)](https://codecov.io/gh/chankamlam/chinese-search)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8580c5b7b0f147518bf6a1feccd5ef45)](https://app.codacy.com/app/chankamlam/chinese-search?utm_source=github.com&utm_medium=referral&utm_content=chankamlam/chinese-search&utm_campaign=Badge_Grade_Dashboard)
