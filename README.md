@@ -6,6 +6,7 @@
   \____/_/ /_/_/_/ /_/\___/____/\___/     /____/\___/\__,_/_/   \___/_/ /_/
 
 ```
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/8580c5b7b0f147518bf6a1feccd5ef45)](https://app.codacy.com/app/chankamlam/chinese-search?utm_source=github.com&utm_medium=referral&utm_content=chankamlam/chinese-search&utm_campaign=Badge_Grade_Dashboard)
 [![Build Status](https://travis-ci.org/chankamlam/chinese-search.svg?branch=master)](https://travis-ci.org/chankamlam/chinese-search)
 [![codecov](https://codecov.io/gh/chankamlam/chinese-search/branch/master/graph/badge.svg)](https://codecov.io/gh/chankamlam/chinese-search)
 [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
