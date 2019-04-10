@@ -1,6 +1,6 @@
 {
   "name": "chinese-search",
-  "version": "1.1.5",
+  "version": "1.1.7",
   "description": "Chinese-Search is a full text search in chinese,base on nodejieba and redis,support to using sql pull data from mysql,and it is easy,small and fast.",
   "main": "./dist/index.js",
   "scripts": {
