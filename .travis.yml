@@ -4,6 +4,8 @@ node_js:
 services:
   - redis-server
   - mysql
+env:
+  - CODECOV_TOKEN="44a19034-f133-45e2-89ae-fb07901f29d8"
 before_install:
   - mysql -e 'CREATE DATABASE IF NOT EXISTS test;'
   - mysql -e 'SET NAMES utf8mb4;'
