@@ -7,7 +7,7 @@
     "clear": "rm -rf coverage ./.nyc_output",
     "mocha": "mocha -t 2000 ./test/index.js --exit",
     "debug": "npm run clean && DEBUG=debug:* npm run mocha",
-    "test": "npm run clear && npm run mocha",
+    "test": "npm run mocha",
     "cmt": "git commit -am ",
     "pub": "git push && npm publish",
     "cover": "npm run clear && nyc --reporter=html --reporter=text mocha -t 2000 ./test/index.js --exit",
