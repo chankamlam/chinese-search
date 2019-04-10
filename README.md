@@ -10,7 +10,6 @@
 [![codecov](https://codecov.io/gh/chankamlam/chinese-search/branch/master/graph/badge.svg)](https://codecov.io/gh/chankamlam/chinese-search)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8580c5b7b0f147518bf6a1feccd5ef45)](https://app.codacy.com/app/chankamlam/chinese-search?utm_source=github.com&utm_medium=referral&utm_content=chankamlam/chinese-search&utm_campaign=Badge_Grade_Dashboard)
 [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
-[![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badge/)    
 [![author](https://img.shields.io/badge/author-chankamlam-blue.svg)](https://github.com/chankamlam)
 # 简介
 Chinese-Search is a full text search in chinese,base on nodejieba and redis, support to using sql pull data from mysql,
