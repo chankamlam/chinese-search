@@ -347,14 +347,3 @@ exports.initDataWithArray = initDataWithArray
 exports.initDataWithArray = initDataWithArray
 exports.clearAllKeys = clearAllKeys
 exports.Engine = Engine
-
-//     addUUID,
-//     cutWords,
-//     reMixWords,
-//     initCacheClient,
-//     initDataClient,
-//     initDataWithArray,
-//     initDataWithSQL,
-//     clearAllKeys,
-//     Engine
-// }
