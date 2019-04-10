@@ -25,4 +25,3 @@ before_install:
   - mysql -e 'SET FOREIGN_KEY_CHECKS = 1;'
 script:
   - "npm run test"
-  - "npm run report-coverage"
