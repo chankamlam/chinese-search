@@ -83,6 +83,9 @@ describe(' - 测试公共方法调用', function() {
           pwd:'Ken5201314',
           type:'mysql'
       }
+      if(process.env["CODECOV_TOKEN"]){
+        opt.pwd = ''
+      }
         let client = initDataClient(null, {data:opt})
         client.raw(sql)
         .then(res=>{
@@ -124,6 +127,9 @@ describe(' - 测试API(SQL填入数据)', function() {
         pwd:'Ken5201314',
         type:'mysql'
     }}
+    if(process.env["CODECOV_TOKEN"]){
+      data.pwd = ''
+    }
     beforeEach(() => {
         s = new Engine(opt)
     })
