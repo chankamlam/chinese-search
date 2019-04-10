@@ -128,7 +128,7 @@ describe(' - 测试API(SQL填入数据)', function() {
         type:'mysql'
     }}
     if(process.env["CODECOV_TOKEN"]){
-      data.pwd = ''
+      opt.data.pwd = ''
     }
     beforeEach(() => {
         s = new Engine(opt)
