@@ -11,7 +11,7 @@
     "cmt": "git commit -am ",
     "pub": "git push && npm publish",
     "cover": "npm run clear && nyc --reporter=html --reporter=text mocha -t 2000 ./test/index.js --exit",
-    "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
+    "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov --exit && codecov"
   },
   "author": {
     "name": "chankamlam",
