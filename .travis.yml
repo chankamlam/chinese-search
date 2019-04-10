@@ -5,22 +5,16 @@ services:
   - redis-server
   - mysql
 before_install:
-  - mysql -e 'CREATE DATABASE IF NOT EXISTS test;
-              SET NAMES utf8mb4;
-              SET FOREIGN_KEY_CHECKS = 0;
-              DROP TABLE IF EXISTS `book`;
-              CREATE TABLE `book` (
-                `book_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-                `book_title` varchar(255) DEFAULT NULL,
-                `book_anthor` varchar(255) DEFAULT NULL,
-                `book_desc` varchar(255) DEFAULT NULL,
-                PRIMARY KEY (`book_id`)
-              ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
-              BEGIN;
-              INSERT INTO `book` VALUES (1, "C#开发指南", "ken", "一本关于C#语言开发的书");
-              INSERT INTO `book` VALUES (2, "Java开发指南", "ben", "一本关于Java语言开发的书");
-              INSERT INTO `book` VALUES (3, "PHP开发指南", "ben", "一本关于PHP语言开发的书");
-              COMMIT;
-              SET FOREIGN_KEY_CHECKS = 1;'
+  - mysql -e 'CREATE DATABASE IF NOT EXISTS test;'
+  - mysql -e 'SET NAMES utf8mb4;'
+  - mysql -e 'SET FOREIGN_KEY_CHECKS = 0;'
+  - mysql -e 'DROP TABLE IF EXISTS `book`;'
+  - mysql -e 'CREATE TABLE `book` (`book_id` int(10) unsigned NOT NULL AUTO_INCREMENT,`book_title` varchar(255) DEFAULT NULL,`book_anthor` varchar(255) DEFAULT NULL,`book_desc` varchar(255) DEFAULT NULL,PRIMARY KEY (`book_id`)) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;'
+  - mysql -e 'BEGIN;'
+  - mysql -e 'INSERT INTO `book` VALUES (1, "C#开发指南", "ken", "一本关于C#语言开发的书");'
+  - mysql -e 'INSERT INTO `book` VALUES (2, "Java开发指南", "ben", "一本关于Java语言开发的书");'
+  - mysql -e 'INSERT INTO `book` VALUES (3, "PHP开发指南", "ben", "一本关于PHP语言开发的书");'
+  - mysql -e 'COMMIT;'
+  - mysql -e 'SET FOREIGN_KEY_CHECKS = 1;'
 script:
   - "npm run test"
