@@ -21,4 +21,4 @@ before_install:
   - mysql -e 'SET FOREIGN_KEY_CHECKS = 1;'
 script:
   - "npm run test"
-  - codecov
+  - "npm run report-coverage"
